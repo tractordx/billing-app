@@ -120,6 +120,7 @@ export function BillDetail() {
   )
   const canReject = bill && (
     (role === 'l1' && bill.status === 'PENDING_L1') ||
+    (role === 'l2' && bill.status === 'PENDING_L2') ||
     (role === 'admin' && (bill.status === 'PENDING_L1' || bill.status === 'PENDING_L2'))
   )
 
