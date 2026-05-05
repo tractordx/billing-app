@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const ROLE_LABELS = { admin: 'Admin', l1: 'L1 Approver', l2: 'L2 Approver', finance: 'Finance' }
-
 export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -96,25 +94,6 @@ export function Login() {
             </button>
           </div>
         </form>
-
-        {/* Role legend */}
-        <div style={{ marginTop: 28, padding: '16px 18px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 }}>Access Levels</div>
-          {Object.entries(ROLE_LABELS).map(([role, label]) => (
-            <div key={role} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <div style={{
-                fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, letterSpacing: '0.04em',
-                background: role === 'admin' ? 'var(--orange-light, rgba(249,115,22,0.15))' : 'var(--surface2)',
-                color: role === 'admin' ? 'var(--orange)' : 'var(--text3)',
-                border: `1px solid ${role === 'admin' ? 'rgba(249,115,22,0.3)' : 'var(--border)'}`,
-                minWidth: 54, textAlign: 'center',
-              }}>
-                {role.toUpperCase()}
-              </div>
-              <span style={{ fontSize: 12, color: 'var(--text2)' }}>{label}</span>
-            </div>
-          ))}
-        </div>
 
         <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--text3)' }}>
           Contact your administrator to get access.

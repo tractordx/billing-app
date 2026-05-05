@@ -48,23 +48,22 @@ export function Users() {
     setCreating(true)
     setCreateError('')
 
+    // Save admin session before signUp replaces it
+    const { data: { session: adminSession } } = await supabase.auth.getSession()
+
     const { data, error: err } = await supabase.auth.signUp({
       email: createForm.email,
       password: createForm.password,
-      options: { data: { name: createForm.name } },
+      options: { data: { name: createForm.name, role: createForm.role } },
     })
 
     if (err) { setCreateError(err.message); setCreating(false); return }
 
-    if (data?.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        email: createForm.email,
-        name: createForm.name,
-        role: createForm.role,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+    // Restore admin session (signUp auto-signs-in the new user)
+    if (adminSession) {
+      await supabase.auth.setSession({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
       })
     }
 
