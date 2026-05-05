@@ -24,7 +24,12 @@ export function AuthProvider({ children }) {
   }, [])
 
   async function loadProfile(userId) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    let data = null
+    for (let i = 0; i < 3; i++) {
+      const res = await supabase.from('profiles').select('*').eq('id', userId).single()
+      if (res.data) { data = res.data; break }
+      await new Promise(r => setTimeout(r, 600))
+    }
     setProfile(data)
     setLoading(false)
   }

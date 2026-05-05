@@ -11,7 +11,7 @@ export function MicroSidebar() {
     { to: '/vendors',    icon: 'vendors',   label: 'Vendors'    },
     { to: '/contracts',  icon: 'contracts', label: 'Contracts'  },
     { to: '/payments',   icon: 'payments',  label: 'Payments'   },
-    ...(isAdmin ? [{ to: '/users', icon: 'vendors', label: 'Users' }] : []),
+    { to: '/users',      icon: 'vendors',   label: 'Users'      },
   ]
 
   const roleLabel = { admin: 'Admin', l1: 'L1 Approver', l2: 'L2 Approver', finance: 'Finance' }[role] || role
