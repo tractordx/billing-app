@@ -25,7 +25,7 @@ function useCountUp(target, duration = 900) {
 export function MetricCard({ label, value, sub, accent = 'orange', onClick, urgent, trend }) {
   const animated = useCountUp(value)
   const [hovered, setHovered] = useState(false)
-  const accentColor = accent === 'lime' ? 'var(--lime)' : accent === 'green' ? 'var(--green)' : accent === 'red' ? 'var(--red)' : 'var(--orange)'
+  const accentColor = accent === 'lime' ? 'var(--lime)' : accent === 'green' ? 'var(--green)' : accent === 'red' ? 'var(--red)' : 'var(--primary)'
   const accentBg = accent === 'lime' ? 'var(--lime-dim)' : accent === 'green' ? 'rgba(34,197,94,0.08)' : accent === 'red' ? 'rgba(239,68,68,0.08)' : 'var(--orange-dim)'
 
   return (
@@ -92,3 +92,4 @@ export function MetricCard({ label, value, sub, accent = 'orange', onClick, urge
     </div>
   )
 }
+

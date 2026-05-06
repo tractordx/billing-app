@@ -17,7 +17,7 @@ function InfoRow({ label, value, mono }) {
   )
 }
 
-function CardHeader({ label, color = 'var(--orange)' }) {
+function CardHeader({ label, color = 'var(--primary)' }) {
   return (
     <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', gap: 8 }}>
       <div style={{ width: 3, height: 14, borderRadius: 2, background: color, flexShrink: 0 }} />
@@ -232,7 +232,7 @@ export function BillDetail() {
 
             {/* Line items */}
             <div className="card">
-              <CardHeader label="Line Items" color="var(--orange)" />
+              <CardHeader label="Line Items" color="var(--primary)" />
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
@@ -254,7 +254,7 @@ export function BillDetail() {
                   }
                   <tr style={{ background: 'var(--surface2)', borderTop: '1px solid var(--border)' }}>
                     <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 13 }} colSpan={2}>Total</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right' }}><span className="mono" style={{ fontWeight: 700, fontSize: 16, color: 'var(--orange)' }}>{fmt(bill.amount)}</span></td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right' }}><span className="mono" style={{ fontWeight: 700, fontSize: 16, color: 'var(--primary)' }}>{fmt(bill.amount)}</span></td>
                   </tr>
                 </tbody>
               </table>
@@ -283,10 +283,10 @@ export function BillDetail() {
 
             {/* Log Payment */}
             {bill.status === 'PENDING_PAYMENT' && !paySuccess && (role === 'admin' || role === 'finance') && (
-              <div className="card" style={{ borderColor: 'var(--orange)' }}>
+              <div className="card" style={{ borderColor: 'var(--primary)' }}>
                 <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 3, height: 14, borderRadius: 2, background: 'var(--orange)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--orange)' }}>Log Payment</span>
+                  <div style={{ width: 3, height: 14, borderRadius: 2, background: 'var(--primary)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)' }}>Log Payment</span>
                 </div>
                 <div style={{ padding: '18px 18px 0' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -367,9 +367,9 @@ export function BillDetail() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Action card — shown only to eligible approvers */}
             {(canApprove || canReject) && (
-              <div className="card" style={{ borderColor: 'var(--orange)' }}>
-                <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', background: 'var(--orange-dim, rgba(249,115,22,0.08))' }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <div className="card" style={{ borderColor: 'var(--primary)' }}>
+                <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--border)', background: 'var(--orange-dim, rgba(29,78,216,0.08))' }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                     Action Required
                   </span>
                 </div>
@@ -500,3 +500,4 @@ export function BillDetail() {
     </>
   )
 }
+
