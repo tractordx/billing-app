@@ -76,7 +76,7 @@ export function Bills() {
                 fontSize: 12,
                 fontWeight: 600,
                 transition: 'all 0.15s',
-                background: isActive ? 'var(--orange)' : 'transparent',
+                background: isActive ? 'var(--primary)' : 'transparent',
                 color: isActive ? '#fff' : 'var(--text3)',
               }}>
                 {label}
@@ -157,3 +157,4 @@ export function Bills() {
     </div>
   )
 }
+

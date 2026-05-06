@@ -6,8 +6,8 @@ import { useAuth } from '../contexts/AuthContext'
 const TH = { padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.03em' }
 const ROLES = ['admin', 'l1', 'l2', 'finance']
 const ROLE_LABELS = { admin: 'Admin', l1: 'L1 Approver', l2: 'L2 Approver', finance: 'Finance' }
-const ROLE_COLORS = { admin: 'var(--orange)', l1: 'var(--lime)', l2: 'var(--green)', finance: 'var(--yellow)' }
-const ROLE_BG = { admin: 'rgba(249,115,22,0.15)', l1: 'rgba(163,230,53,0.15)', l2: 'rgba(34,197,94,0.15)', finance: 'rgba(234,179,8,0.15)' }
+const ROLE_COLORS = { admin: 'var(--primary)', l1: 'var(--lime)', l2: 'var(--green)', finance: 'var(--yellow)' }
+const ROLE_BG = { admin: 'rgba(29,78,216,0.15)', l1: 'rgba(163,230,53,0.15)', l2: 'rgba(34,197,94,0.15)', finance: 'rgba(234,179,8,0.15)' }
 
 const INPUT = { width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border2)', background: 'var(--surface)', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }
 
@@ -91,7 +91,7 @@ export function Users() {
         </div>
         <button
           onClick={() => { setShowCreate(p => !p); setCreateError('') }}
-          style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: 'var(--orange)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+          style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
         >
           {showCreate ? 'Cancel' : '+ New Account'}
         </button>
@@ -160,7 +160,7 @@ export function Users() {
           <button
             onClick={createUser}
             disabled={creating}
-            style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: 'var(--orange)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.6 : 1 }}
+            style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.6 : 1 }}
           >
             {creating ? 'Creating…' : 'Create Account'}
           </button>
@@ -276,3 +276,4 @@ export function Users() {
     </div>
   )
 }
+

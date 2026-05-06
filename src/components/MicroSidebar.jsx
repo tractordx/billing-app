@@ -53,7 +53,7 @@ export function MicroSidebar() {
                 <Icon
                   name={icon}
                   size={15}
-                  color={isActive ? 'var(--orange)' : 'var(--text3)'}
+                  color={isActive ? 'var(--primary)' : 'var(--text3)'}
                 />
                 {label}
               </div>
@@ -67,7 +67,7 @@ export function MicroSidebar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 34, height: 34, borderRadius: '50%',
-            background: 'var(--orange)',
+            background: 'var(--primary)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 800, fontSize: 13, color: '#fff',
             flexShrink: 0,
@@ -96,3 +96,4 @@ export function MicroSidebar() {
     </aside>
   )
 }
+
