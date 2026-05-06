@@ -47,14 +47,17 @@ export function Contracts() {
   const [contracts, setContracts] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState('contracts')
-  const [agreements, setAgreements] = useState([])
-  const [agrLoading, setAgrLoading] = useState(false)
+  const [addenda, setAddenda] = useState([])
+  const [addendaLoading, setAddendaLoading] = useState(false)
+  const [expandedContractId, setExpandedContractId] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [showAddendumForm, setShowAddendumForm] = useState(false)
   const [vendors, setVendors] = useState([])
   const [form, setForm] = useState(EMPTY_FORM)
+  const [addendumForm, setAddendumForm] = useState({ contract_id: '', title: '', date: '', description: '' })
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
+  const [addendumError, setAddendumError] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -67,18 +70,18 @@ export function Contracts() {
     }
     load()
     supabase.from('vendors').select('id,name').order('name').then(({ data }) => setVendors(data || []))
-    setAgrLoading(true)
+    setAddendaLoading(true)
     supabase
-      .from('agreements')
-      .select('*, vendors(id,name,email)')
+      .from('contract_addenda')
+      .select('*, contracts(id,service_description)')
       .order('created_at', { ascending: false })
       .then(({ data }) => {
-        setAgreements(data || [])
-        setAgrLoading(false)
+        setAddenda(data || [])
+        setAddendaLoading(false)
       })
       .catch(() => {
-        setAgreements([])
-        setAgrLoading(false)
+        setAddenda([])
+        setAddendaLoading(false)
       })
   }, [])
 
@@ -116,25 +119,39 @@ export function Contracts() {
     setForm(prev => ({ ...prev, [field]: value }))
   }
 
+  async function handleAddAddendum() {
+    setAddendumError('')
+    if (!addendumForm.contract_id) { setAddendumError('Please select a contract.'); return }
+    if (!addendumForm.title.trim()) { setAddendumError('Addendum title is required.'); return }
+    setSaving(true)
+    const { error } = await supabase.from('contract_addenda').insert({
+      contract_id: addendumForm.contract_id,
+      title: addendumForm.title,
+      date: addendumForm.date || null,
+      description: addendumForm.description || null,
+    })
+    setSaving(false)
+    if (error) { setAddendumError(error.message || 'Failed to save addendum.'); return }
+    setShowAddendumForm(false)
+    setAddendumForm({ contract_id: '', title: '', date: '', description: '' })
+    // Reload addenda
+    const { data } = await supabase.from('contract_addenda').select('*, contracts(id,service_description)').order('created_at', { ascending: false })
+    setAddenda(data || [])
+  }
+
   const filtered = contracts.filter(c => {
     const q = search.toLowerCase()
     return !q || (c.vendors?.name || '').toLowerCase().includes(q) || (c.service_description || '').toLowerCase().includes(q)
   })
 
-  const filteredAgreements = agreements.filter(a => {
-    const q = search.toLowerCase()
-    const title = a.title || a.name || a.description || a.service_description || ''
-    return !q || (a.vendors?.name || '').toLowerCase().includes(q) || title.toLowerCase().includes(q)
-  })
+  const expandedAddenda = expandedContractId ? addenda.filter(a => a.contract_id === expandedContractId) : []
 
   return (
     <div style={{ padding: '32px 36px', width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text)' }}>Contracts</h1>
-          <div style={{ color: 'var(--text3)', fontSize: 13, marginTop: 4 }}>
-            {activeTab === 'contracts' ? `${contracts.length} contracts on file` : `${agreements.length} agreements on file`}
-          </div>
+          <div style={{ color: 'var(--text3)', fontSize: 13, marginTop: 4 }}>{contracts.length} contracts on file</div>
         </div>
         <button className="btn-primary" onClick={() => { setForm(EMPTY_FORM); setFormError(''); setShowForm(true) }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Icon name="plus" size={14} color="#fff" /> Add Contract
@@ -148,113 +165,97 @@ export function Contracts() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 4, width: 'fit-content', marginBottom: 18 }}>
-        {['contracts', 'agreements'].map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)} style={{
-            padding: '6px 16px', borderRadius: 8, border: 'none',
-            fontSize: 12, fontWeight: 600, transition: 'all 0.15s', cursor: 'pointer',
-            background: activeTab === tab ? 'var(--orange)' : 'transparent',
-            color: activeTab === tab ? '#fff' : 'var(--text3)',
-            textTransform: 'capitalize',
-          }}>{tab}</button>
-        ))}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+        <button className="btn-primary" onClick={() => { setAddendumForm({ contract_id: '', title: '', date: '', description: '' }); setAddendumError(''); setShowAddendumForm(true) }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon name="plus" size={14} color="#fff" /> Add Addendum
+        </button>
       </div>
 
-      {activeTab === 'contracts' && (
-        <div className="card">
-          {loading ? (
-            <div style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>Loading…</div>
-          ) : (
+      <div className="card">
+        {loading ? (
+          <div style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>Loading…</div>
+        ) : (
+          <div>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                  {['Vendor', 'Service', 'Max Amount', 'Cycle', 'Valid Period', 'Terms', 'Status', 'Source'].map(h => (
+                  {['', 'Vendor', 'Service', 'Max Amount', 'Cycle', 'Valid Period', 'Terms', 'Status', 'Source'].map(h => (
                     <th key={h} style={TH}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((c, i) => (
-                  <tr key={c.id} className="table-row-hover" style={{ borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }} onClick={() => navigate(`/vendors/${c.vendors?.id}`)}>
-                    <td style={{ padding: '13px 16px' }}>
-                      <div style={{ fontWeight: 500, fontSize: 13 }}>{c.vendors?.name || '—'}</div>
-                      <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{c.vendors?.email}</div>
-                    </td>
-                    <td style={{ padding: '13px 16px', fontSize: 13, color: 'var(--text2)', maxWidth: 200 }}>
-                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.service_description || '—'}</div>
-                    </td>
-                    <td style={{ padding: '13px 16px' }}><span className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{fmt(c.max_amount)}</span></td>
-                    <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text2)', textTransform: 'capitalize' }}>{c.billing_cycle?.toLowerCase() || '—'}</td>
-                    <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
-                      {fmtDate(c.valid_from)}<span style={{ margin: '0 4px', opacity: 0.5 }}>→</span>{fmtDate(c.valid_to)}
-                    </td>
-                    <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text2)' }}>{c.payment_terms_days ? `${c.payment_terms_days} days` : '—'}</td>
-                    <td style={{ padding: '13px 16px' }}><ContractStatusTag valid_to={c.valid_to} /></td>
-                    <td style={{ padding: '13px 16px' }}>
-                      {c.original_filename
-                        ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text3)' }}><Icon name="bills" size={12} color="var(--text3)" /> File</span>
-                        : c.email_subject
-                        ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text3)' }}><Icon name="external" size={12} color="var(--text3)" /> Email</span>
-                        : <span style={{ color: 'var(--text3)', fontSize: 13 }}>—</span>}
-                    </td>
-                  </tr>
+                  <>
+                    <tr
+                      key={c.id}
+                      className="table-row-hover"
+                      style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                      onClick={() => setExpandedContractId(expandedContractId === c.id ? null : c.id)}
+                    >
+                      <td style={{ padding: '13px 16px', textAlign: 'center' }}>
+                        <Icon
+                          name={expandedContractId === c.id ? 'chevron_down' : 'chevron_right'}
+                          size={16}
+                          color="var(--text3)"
+                        />
+                      </td>
+                      <td style={{ padding: '13px 16px' }}>
+                        <div style={{ fontWeight: 500, fontSize: 13 }}>{c.vendors?.name || '—'}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{c.vendors?.email}</div>
+                      </td>
+                      <td style={{ padding: '13px 16px', fontSize: 13, color: 'var(--text2)', maxWidth: 200 }}>
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.service_description || '—'}</div>
+                      </td>
+                      <td style={{ padding: '13px 16px' }}><span className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{fmt(c.max_amount)}</span></td>
+                      <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text2)', textTransform: 'capitalize' }}>{c.billing_cycle?.toLowerCase() || '—'}</td>
+                      <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
+                        {fmtDate(c.valid_from)}<span style={{ margin: '0 4px', opacity: 0.5 }}>→</span>{fmtDate(c.valid_to)}
+                      </td>
+                      <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text2)' }}>{c.payment_terms_days ? `${c.payment_terms_days} days` : '—'}</td>
+                      <td style={{ padding: '13px 16px' }}><ContractStatusTag valid_to={c.valid_to} /></td>
+                      <td style={{ padding: '13px 16px' }}>
+                        {c.original_filename
+                          ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text3)' }}><Icon name="bills" size={12} color="var(--text3)" /> File</span>
+                          : c.email_subject
+                          ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text3)' }}><Icon name="external" size={12} color="var(--text3)" /> Email</span>
+                          : <span style={{ color: 'var(--text3)', fontSize: 13 }}>—</span>}
+                      </td>
+                    </tr>
+                    {expandedContractId === c.id && (
+                      <tr style={{ background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
+                        <td colSpan={9} style={{ padding: '16px' }}>
+                          <div style={{ marginBottom: 12 }}>
+                            <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>Addendum</h3>
+                            {addendaLoading ? (
+                              <div style={{ color: 'var(--text3)', fontSize: 12 }}>Loading addenda…</div>
+                            ) : expandedAddenda.length === 0 ? (
+                              <div style={{ color: 'var(--text3)', fontSize: 12 }}>No addendum added yet.</div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                {expandedAddenda.map(a => (
+                                  <div key={a.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px', fontSize: 12 }}>
+                                    <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{a.title}</div>
+                                    {a.date && <div style={{ color: 'var(--text3)', marginBottom: 4 }}>{fmtDate(a.date)}</div>}
+                                    {a.description && <div style={{ color: 'var(--text2)', fontSize: 12 }}>{a.description}</div>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={8} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No contracts found</td></tr>
+                  <tr><td colSpan={9} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No contracts found</td></tr>
                 )}
               </tbody>
             </table>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'agreements' && (
-        <div className="card">
-          {agrLoading ? (
-            <div style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>Loading…</div>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                  {['Vendor', 'Title / Description', 'Valid Period', 'Amount', 'Status', 'Created'].map(h => (
-                    <th key={h} style={TH}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAgreements.map((a, i) => {
-                  const title = a.title || a.name || a.description || a.service_description || '—'
-                  const startDate = a.start_date || a.valid_from
-                  const endDate = a.end_date || a.valid_to
-                  const amount = a.amount || a.max_amount
-                  return (
-                    <tr key={a.id} className="table-row-hover" style={{ borderBottom: i < filteredAgreements.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }} onClick={() => a.vendors?.id && navigate(`/vendors/${a.vendors.id}`)}>
-                      <td style={{ padding: '13px 16px' }}>
-                        <div style={{ fontWeight: 500, fontSize: 13 }}>{a.vendors?.name || '—'}</div>
-                        <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{a.vendors?.email}</div>
-                      </td>
-                      <td style={{ padding: '13px 16px', fontSize: 13, color: 'var(--text2)', maxWidth: 220 }}>
-                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
-                      </td>
-                      <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
-                        {fmtDate(startDate)}<span style={{ margin: '0 4px', opacity: 0.5 }}>→</span>{fmtDate(endDate)}
-                      </td>
-                      <td style={{ padding: '13px 16px' }}>
-                        {amount ? <span className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{fmt(amount)}</span> : <span style={{ color: 'var(--text3)', fontSize: 13 }}>—</span>}
-                      </td>
-                      <td style={{ padding: '13px 16px' }}><AgreementStatusTag status={a.status} /></td>
-                      <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{fmtDate(a.created_at)}</td>
-                    </tr>
-                  )
-                })}
-                {filteredAgreements.length === 0 && (
-                  <tr><td colSpan={6} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No agreements found</td></tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {showForm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) { setShowForm(false) } }}>
@@ -367,6 +368,78 @@ export function Contracts() {
                 <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save Contract'}</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showAddendumForm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={e => { if (e.target === e.currentTarget) { setShowAddendumForm(false) } }}>
+          <div className="card" style={{ width: 520, maxHeight: '90vh', overflowY: 'auto', padding: 28 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Add Addendum</h2>
+              <button className="btn-ghost" onClick={() => setShowAddendumForm(false)} style={{ padding: '4px 8px', fontSize: 18, lineHeight: 1 }}>×</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 6 }}>Contract *</label>
+                <select
+                  className="input-base"
+                  value={addendumForm.contract_id}
+                  onChange={e => setAddendumForm(p => ({ ...p, contract_id: e.target.value }))}
+                  style={{ width: '100%' }}
+                >
+                  <option value="">Select contract…</option>
+                  {filtered.map(c => (
+                    <option key={c.id} value={c.id}>{c.vendors?.name} - {c.service_description}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 6 }}>Addendum Title *</label>
+                <input
+                  className="input-base"
+                  type="text"
+                  value={addendumForm.title}
+                  onChange={e => setAddendumForm(p => ({ ...p, title: e.target.value }))}
+                  placeholder="e.g., Scope change, Rate revision…"
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 6 }}>Date</label>
+                <input
+                  className="input-base"
+                  type="date"
+                  value={addendumForm.date}
+                  onChange={e => setAddendumForm(p => ({ ...p, date: e.target.value }))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 6 }}>Description</label>
+                <textarea
+                  className="input-base"
+                  rows={3}
+                  value={addendumForm.description}
+                  onChange={e => setAddendumForm(p => ({ ...p, description: e.target.value }))}
+                  placeholder="Details of the addendum…"
+                  style={{ width: '100%', resize: 'vertical' }}
+                />
+              </div>
+
+              {addendumError && (
+                <div style={{ background: 'var(--red-light)', color: 'var(--red)', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 13 }}>{addendumError}</div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
+                <button type="button" className="btn-ghost" onClick={() => setShowAddendumForm(false)} disabled={saving}>Cancel</button>
+                <button type="button" className="btn-primary" onClick={handleAddAddendum} disabled={saving}>{saving ? 'Saving…' : 'Add Addendum'}</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

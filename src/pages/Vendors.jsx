@@ -8,7 +8,8 @@ import { Icon } from '../components/Icon'
 
 const TH = { padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.03em' }
 const STATUS_TABS = ['ALL', 'ACTIVE', 'PENDING', 'INACTIVE']
-const EMPTY_FORM = { name: '', email: '', phone: '', contact_person: '', gstin: '', pan: '', vendor_code: '', bank_name: '', bank_account_no: '', bank_ifsc: '', bank_account_name: '' }
+const VENDOR_CATEGORIES = ['ALL', 'SERVICE', 'PRODUCT']
+const EMPTY_FORM = { name: '', email: '', phone: '', contact_person: '', gstin: '', pan: '', vendor_code: '', category: 'SERVICE', bank_name: '', bank_account_no: '', bank_ifsc: '', bank_account_name: '' }
 
 export function Vendors() {
   const navigate = useNavigate()
@@ -18,6 +19,7 @@ export function Vendors() {
   const [loadError, setLoadError] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [categoryFilter, setCategoryFilter] = useState('ALL')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
@@ -32,7 +34,7 @@ export function Vendors() {
     try {
       const { data, error: err } = await supabase
         .from('vendors')
-        .select('id,name,email,phone,contact_person,gstin,pan,status,vendor_code,created_at')
+        .select('id,name,email,phone,contact_person,gstin,pan,status,vendor_code,category,created_at')
         .order('created_at', { ascending: false })
       if (err) throw err
       setVendors(data || [])
@@ -84,8 +86,9 @@ export function Vendors() {
 
   const filtered = vendors.filter(v => {
     const matchStatus = statusFilter === 'ALL' || v.status === statusFilter
+    const matchCategory = categoryFilter === 'ALL' || v.category === categoryFilter
     const q = search.toLowerCase()
-    return matchStatus && (!q || v.name.toLowerCase().includes(q) || (v.email || '').toLowerCase().includes(q) || (v.vendor_code || '').toLowerCase().includes(q))
+    return matchStatus && matchCategory && (!q || v.name.toLowerCase().includes(q) || (v.email || '').toLowerCase().includes(q) || (v.vendor_code || '').toLowerCase().includes(q))
   })
 
   return (
@@ -120,14 +123,27 @@ export function Vendors() {
             <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {[
                 ['name', 'Vendor Name *'], ['email', 'Email *'], ['phone', 'Phone'], ['contact_person', 'Contact Person'],
-                ['gstin', 'GSTIN'], ['pan', 'PAN'], ['vendor_code', 'Vendor Code'],
+                ['category', 'Category'], ['gstin', 'GSTIN'], ['pan', 'PAN'], ['vendor_code', 'Vendor Code'],
                 ['bank_name', 'Bank Name'], ['bank_account_no', 'Account No.'], ['bank_ifsc', 'IFSC Code'], ['bank_account_name', 'Account Holder Name'],
-              ].map(([key, label]) => (
-                <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text3)', fontWeight: 500, gridColumn: key === 'name' || key === 'bank_account_name' ? 'span 2' : undefined }}>
-                  {label}
-                  <input value={form[key] || ''} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} className="input-base" style={{ fontSize: 13 }} />
-                </label>
-              ))}
+              ].map(([key, label]) => {
+                if (key === 'category') {
+                  return (
+                    <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text3)', fontWeight: 500 }}>
+                      {label}
+                      <select value={form[key] || 'SERVICE'} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} className="input-base" style={{ fontSize: 13 }}>
+                        <option value="SERVICE">Service</option>
+                        <option value="PRODUCT">Product</option>
+                      </select>
+                    </label>
+                  )
+                }
+                return (
+                  <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text3)', fontWeight: 500, gridColumn: key === 'name' || key === 'bank_account_name' ? 'span 2' : undefined }}>
+                    {label}
+                    <input value={form[key] || ''} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} className="input-base" style={{ fontSize: 13 }} />
+                  </label>
+                )
+              })}
             </div>
 
             {/* Success message */}
@@ -177,6 +193,16 @@ export function Vendors() {
             }}>{s.charAt(0) + s.slice(1).toLowerCase()}</button>
           ))}
         </div>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 4 }}>
+          {VENDOR_CATEGORIES.map(c => (
+            <button key={c} onClick={() => setCategoryFilter(c)} style={{
+              padding: '6px 14px', borderRadius: 8, border: 'none',
+              fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
+              background: categoryFilter === c ? 'var(--primary)' : 'transparent',
+              color: categoryFilter === c ? '#fff' : 'var(--text3)',
+            }}>{c.charAt(0) + c.slice(1).toLowerCase()}</button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
@@ -187,7 +213,7 @@ export function Vendors() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                {['Vendor', 'Code', 'Contact', 'GSTIN', 'Status', 'Added', ''].map(h => (
+                {['Vendor', 'Code', 'Category', 'Contact', 'GSTIN', 'Status', 'Added', ''].map(h => (
                   <th key={h} style={TH}>{h}</th>
                 ))}
               </tr>
@@ -200,19 +226,33 @@ export function Vendors() {
                     <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>{v.email}</div>
                   </td>
                   <td style={{ padding: '13px 16px' }}><span className="mono" style={{ fontSize: 12, color: 'var(--text2)' }}>{v.vendor_code || '—'}</span></td>
+                  <td style={{ padding: '13px 16px' }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, borderRadius: 99, padding: '4px 10px',
+                      background: v.category === 'SERVICE' ? 'var(--primary-light)' : 'rgba(132,204,22,0.15)',
+                      color: v.category === 'SERVICE' ? 'var(--primary)' : '#4d7c0f',
+                    }}>
+                      {v.category || '—'}
+                    </span>
+                  </td>
                   <td style={{ padding: '13px 16px', fontSize: 13, color: 'var(--text2)' }}>{v.contact_person || '—'}</td>
                   <td style={{ padding: '13px 16px' }}><span className="mono" style={{ fontSize: 12, color: 'var(--text2)' }}>{v.gstin || '—'}</span></td>
                   <td style={{ padding: '13px 16px' }}><StatusBadge status={v.status} type="vendor" /></td>
                   <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text3)' }}>{fmtDate(v.created_at)}</td>
                   <td style={{ padding: '13px 16px' }}>
-                    <button onClick={e => { e.stopPropagation(); navigate(`/vendors/${v.id}`) }} className="btn-ghost" style={{ padding: '5px 12px', fontSize: 12 }}>
-                      View →
-                    </button>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={e => { e.stopPropagation(); navigate(`/vendors/${v.id}`) }} className="btn-ghost" style={{ padding: '5px 12px', fontSize: 12 }}>
+                        View →
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); navigate(`/vendors/${v.id}/ledger`) }} className="btn-ghost" style={{ padding: '5px 12px', fontSize: 12, color: 'var(--primary)', fontWeight: 700 }}>
+                        Ledger
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No vendors found</td></tr>
+                <tr><td colSpan={8} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No vendors found</td></tr>
               )}
             </tbody>
           </table>

@@ -7,6 +7,7 @@ import { Bills } from './pages/Bills'
 import { BillDetail } from './pages/BillDetail'
 import { Vendors } from './pages/Vendors'
 import { VendorDetail } from './pages/VendorDetail'
+import { VendorLedger } from './pages/VendorLedger'
 import { Contracts } from './pages/Contracts'
 import { Payments } from './pages/Payments'
 import { Login } from './pages/Login'
@@ -60,6 +61,7 @@ function AnimatedRoutes() {
         <Route path="/bills/:id"    element={<BillDetail />} />
         <Route path="/vendors"      element={<Vendors />} />
         <Route path="/vendors/:id"  element={<VendorDetail />} />
+        <Route path="/vendors/:id/ledger" element={<VendorLedger />} />
         <Route path="/contracts"    element={<Contracts />} />
         <Route path="/payments"     element={<Payments />} />
         <Route path="/users"        element={<Users />} />
