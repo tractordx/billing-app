@@ -6,7 +6,7 @@ import { Icon } from '../components/Icon'
 const MODE_CFG = {
   NEFT:   { bg: 'var(--lime-dim)',    color: 'var(--lime)',   border: 'rgba(163,230,53,0.25)' },
   RTGS:   { bg: 'var(--green-light)', color: 'var(--green)',  border: 'rgba(34,197,94,0.25)' },
-  UPI:    { bg: 'var(--orange-dim)',  color: 'var(--orange)', border: 'rgba(249,115,22,0.25)' },
+  UPI:    { bg: 'var(--orange-dim)',  color: 'var(--primary)', border: 'rgba(29,78,216,0.25)' },
   CHEQUE: { bg: 'var(--yellow-light)',color: 'var(--yellow)', border: 'rgba(234,179,8,0.25)' },
 }
 
@@ -96,8 +96,8 @@ export function Payments() {
                     <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{fmtDate(p.paid_at)}</td>
                     <td style={{ padding: '13px 16px' }}>
                       {p.receipt_url ? (
-                        <a href={p.receipt_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--orange)', fontWeight: 600, textDecoration: 'none' }}>
-                          <Icon name="external" size={13} color="var(--orange)" /> View
+                        <a href={p.receipt_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
+                          <Icon name="external" size={13} color="var(--primary)" /> View
                         </a>
                       ) : <span style={{ color: 'var(--text3)', fontSize: 13 }}>—</span>}
                     </td>
@@ -114,3 +114,4 @@ export function Payments() {
     </div>
   )
 }
+

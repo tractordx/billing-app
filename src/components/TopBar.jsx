@@ -14,7 +14,7 @@ const PAGES = [
 export function TopBar() {
   const { profile, role, signOut } = useAuth()
 
-  const roleColor = { admin: 'var(--orange)', l1: 'var(--lime)', l2: 'var(--green)', finance: 'var(--yellow)' }[role] || 'var(--orange)'
+  const roleColor = { admin: 'var(--primary)', l1: 'var(--lime)', l2: 'var(--green)', finance: 'var(--yellow)' }[role] || 'var(--primary)'
 
   return (
     <header style={{
@@ -73,3 +73,4 @@ export function TopBar() {
     </header>
   )
 }
+

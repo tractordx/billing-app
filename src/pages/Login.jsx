@@ -30,11 +30,11 @@ export function Login() {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
             width: 48, height: 48, borderRadius: '50%',
-            background: 'var(--orange)',
+            background: 'var(--primary)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontWeight: 900, fontSize: 18, color: '#fff',
             margin: '0 auto 16px',
-            boxShadow: '0 4px 12px rgba(249,115,22,0.3)',
+            boxShadow: '0 4px 12px rgba(29,78,216,0.3)',
           }}>M</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em' }}>Miraggio</div>
           <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4 }}>Vendor Payments — Sign in</div>
@@ -102,3 +102,4 @@ export function Login() {
     </div>
   )
 }
+

@@ -214,7 +214,7 @@ export function VendorDetail() {
               ['Total Bills', String(bills.length), 'var(--text)'],
               ['Total Billed', fmt(totalBilled), 'var(--text)'],
               ['Total Paid', fmt(totalPaid), 'var(--green)'],
-              ['Outstanding', fmt(totalBilled - totalPaid), totalBilled - totalPaid > 0 ? 'var(--orange)' : 'var(--green)'],
+              ['Outstanding', fmt(totalBilled - totalPaid), totalBilled - totalPaid > 0 ? 'var(--primary)' : 'var(--green)'],
               ['Agreements', String(agreements.length), 'var(--text)'],
             ].map(([label, val, color]) => (
               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
@@ -231,3 +231,4 @@ export function VendorDetail() {
     </div>
   )
 }
+

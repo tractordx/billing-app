@@ -87,12 +87,12 @@ export function Dashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 16, marginBottom: 16 }}>
             {/* KPI 1 — Approvals */}
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', overflow: 'hidden', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'var(--orange)', borderRadius: '16px 16px 0 0' }} />
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'var(--primary)', borderRadius: '16px 16px 0 0' }} />
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 16 }}>APPROVAL QUEUE</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
                 <div onClick={() => navigate('/bills?status=PENDING_L1')} style={{ cursor: 'pointer' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: `7px solid var(--orange)` }} />
+                    <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: `7px solid var(--primary)` }} />
                     <span style={{ fontSize: 11, color: 'var(--text3)' }}>L1</span>
                   </div>
                   <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1 }}>{stats.pendingL1}</div>
@@ -111,7 +111,7 @@ export function Dashboard() {
               <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 32 }}>
                 {MOCK_TREND.map((d, i) => (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                    <div style={{ width: '100%', height: Math.round(d.v / 12000), background: i % 2 === 0 ? 'var(--orange)' : 'var(--lime)', borderRadius: 3, minHeight: 4, maxHeight: 28 }} />
+                    <div style={{ width: '100%', height: Math.round(d.v / 12000), background: i % 2 === 0 ? 'var(--primary)' : 'var(--lime)', borderRadius: 3, minHeight: 4, maxHeight: 28 }} />
                   </div>
                 ))}
               </div>
@@ -124,7 +124,7 @@ export function Dashboard() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
                 <div onClick={() => navigate('/bills?status=PENDING_PAYMENT')} style={{ cursor: 'pointer' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: `7px solid var(--orange)` }} />
+                    <div style={{ width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: `7px solid var(--primary)` }} />
                     <span style={{ fontSize: 11, color: 'var(--text3)' }}>Due</span>
                   </div>
                   <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1, fontFamily: 'DM Mono, monospace' }}>{fmt(stats.pendingPayAmt).replace('₹','')}</div>
@@ -145,7 +145,7 @@ export function Dashboard() {
                   <div key={i} style={{
                     width: 8, height: 8, borderRadius: '50%',
                     background: i < Math.round((stats.pendingPayCount / (recentBills.length || 1)) * 30)
-                      ? 'var(--orange)' : i < 20 ? 'var(--lime)' : 'var(--surface3)',
+                      ? 'var(--primary)' : i < 20 ? 'var(--lime)' : 'var(--surface3)',
                   }} />
                 ))}
               </div>
@@ -156,7 +156,7 @@ export function Dashboard() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>PAYMENT TREND</div>
                 <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text3)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--orange)', display: 'inline-block' }} />Billed</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary)', display: 'inline-block' }} />Billed</span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--lime)', display: 'inline-block' }} />Paid</span>
                 </div>
               </div>
@@ -164,8 +164,8 @@ export function Dashboard() {
                 <AreaChart data={MOCK_TREND}>
                   <defs>
                     <linearGradient id="gOrange" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#1d4ed8" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#1d4ed8" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gLime" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#a3e635" stopOpacity={0.3} />
@@ -174,7 +174,7 @@ export function Dashboard() {
                   </defs>
                   <XAxis dataKey="m" tick={{ fontSize: 10, fill: '#666' }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ background: '#fff', border: '1px solid #e4e4e7', borderRadius: 8, fontSize: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} labelStyle={{ color: '#18181b' }} itemStyle={{ color: '#52525b' }} formatter={v => `₹${Number(v).toLocaleString('en-IN')}`} />
-                  <Area type="monotone" dataKey="v" stroke="#f97316" strokeWidth={2} fill="url(#gOrange)" />
+                  <Area type="monotone" dataKey="v" stroke="#1d4ed8" strokeWidth={2} fill="url(#gOrange)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -186,7 +186,7 @@ export function Dashboard() {
             <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>Recent Bills</div>
-                <button onClick={() => navigate('/bills')} style={{ background: 'none', border: 'none', color: 'var(--orange)', fontSize: 12, fontWeight: 600 }}>
+                <button onClick={() => navigate('/bills')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 12, fontWeight: 600 }}>
                   View all →
                 </button>
               </div>
@@ -203,7 +203,7 @@ export function Dashboard() {
                     <tr key={b.id} className="table-row-hover" style={{ borderBottom: i < recentBills.length - 1 ? '1px solid var(--border)' : 'none', cursor: 'pointer' }} onClick={() => navigate(`/bills/${b.id}`)}>
                       <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13 }}>{b.vendors?.name || '—'}</td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text3)', fontFamily: 'DM Mono, monospace' }}>{b.invoice_number || '—'}</td>
-                      <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 13, fontFamily: 'DM Mono, monospace', color: 'var(--orange)' }}>{fmt(b.amount)}</td>
+                      <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 13, fontFamily: 'DM Mono, monospace', color: 'var(--primary)' }}>{fmt(b.amount)}</td>
                       <td style={{ padding: '12px 16px' }}><StatusBadge status={b.status} /></td>
                     </tr>
                   ))}
@@ -271,3 +271,4 @@ export function Dashboard() {
     </div>
   )
 }
+

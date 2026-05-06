@@ -153,7 +153,7 @@ export function Contracts() {
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
             padding: '6px 16px', borderRadius: 8, border: 'none',
             fontSize: 12, fontWeight: 600, transition: 'all 0.15s', cursor: 'pointer',
-            background: activeTab === tab ? 'var(--orange)' : 'transparent',
+            background: activeTab === tab ? 'var(--primary)' : 'transparent',
             color: activeTab === tab ? '#fff' : 'var(--text3)',
             textTransform: 'capitalize',
           }}>{tab}</button>
@@ -373,3 +373,4 @@ export function Contracts() {
     </div>
   )
 }
+
