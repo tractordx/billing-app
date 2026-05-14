@@ -86,7 +86,7 @@ export function Contracts() {
     const [agRes, vRes] = await Promise.all([
       supabase
         .from('agreements')
-        .select('id,vendor_id,trade_name,service_description,status,agreement_url,agreement_url2,start_date,expiry_date,billing_cycle,max_amount,payment_terms_days,added_by,created_at,vendors(id,name)')
+        .select('id,vendor_id,trade_name,service_description,status,agreement_url,agreement_url2,start_date,expiry_date,billing_cycle,max_amount,payment_terms_days,added_by,created_at')
         .order('created_at', { ascending: false }),
       supabase.from('vendors').select('id,name').order('name'),
     ])
@@ -152,7 +152,7 @@ export function Contracts() {
 
   const filtered = agreements.filter(a => {
     const q = search.toLowerCase()
-    const name = (a.trade_name || a.vendors?.name || '').toLowerCase()
+    const name = (a.trade_name || a.trade_name || '').toLowerCase()
     const desc = (a.service_description || '').toLowerCase()
     return !q || name.includes(q) || desc.includes(q)
   })
@@ -209,8 +209,8 @@ export function Contracts() {
               {filtered.map((a, i) => (
                 <tr key={a.id} className="table-row-hover" style={{ borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}>
                   <td style={{ padding: '13px 16px' }}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{a.trade_name || a.vendors?.name || '—'}</div>
-                    {a.vendors?.name && a.trade_name && a.vendors.name !== a.trade_name && (
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{a.trade_name || '—'}</div>
+                    {false && (
                       <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{a.vendors.name}</div>
                     )}
                   </td>
@@ -355,7 +355,7 @@ export function Contracts() {
                   <option value="">Select agreement…</option>
                   {agreements.map(a => (
                     <option key={a.id} value={a.id}>
-                      {a.trade_name || a.vendors?.name || 'Unnamed'}{a.service_description ? ` — ${a.service_description.slice(0, 40)}` : ''}
+                      {a.trade_name || a.trade_name || 'Unnamed'}{a.service_description ? ` — ${a.service_description.slice(0, 40)}` : ''}
                     </option>
                   ))}
                 </select>
