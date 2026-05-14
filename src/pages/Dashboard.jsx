@@ -49,9 +49,9 @@ const pillSelect = {
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const [allBills, setAllBills]       = useState([])
-  const [loading, setLoading]         = useState(true)
-  const [dateFilter, setDateFilter]   = useState('all')
+  const [allBills, setAllBills]         = useState([])
+  const [loading, setLoading]           = useState(true)
+  const [dateFilter, setDateFilter]     = useState('all')
   const [vendorFilter, setVendorFilter] = useState('all')
 
   useEffect(() => {
@@ -66,51 +66,34 @@ export function Dashboard() {
     load()
   }, [])
 
-  // Unique vendors for the vendor dropdown
   const uniqueVendors = useMemo(() => {
     const map = {}
     allBills.forEach(b => {
-      if (b.vendor_id && !map[b.vendor_id])
-        map[b.vendor_id] = b.vendors?.name || b.vendor_id
+      if (b.vendor_id && !map[b.vendor_id]) map[b.vendor_id] = b.vendors?.name || b.vendor_id
     })
-    return Object.entries(map)
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name))
+    return Object.entries(map).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
   }, [allBills])
 
-  // Apply both filters
   const bills = useMemo(() => {
-    let filtered = applyDateFilter(allBills, dateFilter)
-    if (vendorFilter !== 'all') filtered = filtered.filter(b => b.vendor_id === vendorFilter)
-    return filtered
+    let f = applyDateFilter(allBills, dateFilter)
+    if (vendorFilter !== 'all') f = f.filter(b => b.vendor_id === vendorFilter)
+    return f
   }, [allBills, dateFilter, vendorFilter])
 
-  // Compute KPI stats from filtered bills
   const stats = useMemo(() => {
-    const now       = new Date()
+    const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const pendingL1  = bills.filter(b => b.status === 'PENDING_L1').length
-    const pendingL2  = bills.filter(b => b.status === 'PENDING_L2').length
-    const payBills   = bills.filter(b => b.status === 'PENDING_PAYMENT')
-    const paidMonth  = bills
-      .filter(b => b.status === 'PAID' && new Date(b.created_at) >= monthStart)
-      .reduce((s, b) => s + Number(b.amount), 0)
-    return {
-      pendingL1, pendingL2,
-      pendingPayAmt: payBills.reduce((s, b) => s + Number(b.amount), 0),
-      pendingPayCount: payBills.length,
-      paidMonth,
-    }
+    const pendingL1 = bills.filter(b => b.status === 'PENDING_L1').length
+    const pendingL2 = bills.filter(b => b.status === 'PENDING_L2').length
+    const payBills  = bills.filter(b => b.status === 'PENDING_PAYMENT')
+    const paidMonth = bills.filter(b => b.status === 'PAID' && new Date(b.created_at) >= monthStart).reduce((s, b) => s + Number(b.amount), 0)
+    return { pendingL1, pendingL2, pendingPayAmt: payBills.reduce((s, b) => s + Number(b.amount), 0), pendingPayCount: payBills.length, paidMonth }
   }, [bills])
 
-  // Vendor-wise summary from filtered bills
   const vendorSummaryRows = useMemo(() => {
     const map = {}
     bills.forEach(b => {
-      if (!map[b.vendor_id]) map[b.vendor_id] = {
-        vendor_id: b.vendor_id, vendor_name: b.vendors?.name || '—',
-        total_invoiced: 0, count: 0, pending_count: 0,
-      }
+      if (!map[b.vendor_id]) map[b.vendor_id] = { vendor_id: b.vendor_id, vendor_name: b.vendors?.name || '—', total_invoiced: 0, count: 0, pending_count: 0 }
       map[b.vendor_id].total_invoiced += Number(b.amount || 0)
       map[b.vendor_id].count += 1
       if (b.status !== 'PAID') map[b.vendor_id].pending_count += 1
@@ -122,86 +105,86 @@ export function Dashboard() {
 
   return (
     <div style={{ padding: '28px 28px', maxWidth: 1400, width: '100%' }}>
-
-      {/* ── Page header ─────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
         <div>
-          {/* MIRAGGIO SMS — bigger brand line */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginBottom: 6 }}>
-            <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1 }}>
-              MIRAGGIO
-            </span>
+            <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1 }}>MIRAGGIO</span>
             <span style={{ fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', lineHeight: 1 }}>
               <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--primary)' }}>S</span>
               <span style={{ fontSize: 13 }}>M</span>
               <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--primary)' }}>S</span>
             </span>
           </div>
-          <h1 style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1 }}>
-            OVERVIEW
-          </h1>
+          <h1 style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1 }}>OVERVIEW</h1>
           <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 6 }}>
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         </div>
-
-        {/* ── Functional filters ────────────────────────────── */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ position: 'relative' }}>
-            <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={pillSelect}>
-              {DATE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-          <div style={{ position: 'relative' }}>
-            <select value={vendorFilter} onChange={e => setVendorFilter(e.target.value)} style={pillSelect}>
-              <option value="all">All Vendors</option>
-              {uniqueVendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-            </select>
-          </div>
+          <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={pillSelect}>
+            {DATE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+          <select value={vendorFilter} onChange={e => setVendorFilter(e.target.value)} style={pillSelect}>
+            <option value="all">All Vendors</option>
+            {uniqueVendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+          </select>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ color: 'var(--text3)', padding: '40px 0', fontSize: 13 }}>Loading data…</div>
+        <div style={{ color: 'var(--text3)', padding: '40px 0', fontSize: 13 }}>Loading data...</div>
       ) : (
         <>
-          {/* ── KPI cards ──────────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
-
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', overflow: 'hidden', cursor: 'pointer' }}
-              onClick={() => navigate('/bills?status=PENDING_L1')}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', cursor: 'pointer' }} onClick={() => navigate('/bills?status=PENDING_L1')}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Awaiting L1</div>
               <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, marginBottom: 12 }}>{stats.pendingL1}</div>
               <div style={{ fontSize: 11, color: 'var(--text3)' }}>bills pending approval</div>
             </div>
-
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', overflow: 'hidden', cursor: 'pointer' }}
-              onClick={() => navigate('/bills?status=PENDING_L2')}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', cursor: 'pointer' }} onClick={() => navigate('/bills?status=PENDING_L2')}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Awaiting L2</div>
               <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, marginBottom: 12 }}>{stats.pendingL2}</div>
               <div style={{ fontSize: 11, color: 'var(--text3)' }}>bills in approval</div>
             </div>
-
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', overflow: 'hidden', cursor: 'pointer' }}
-              onClick={() => navigate('/bills?status=PENDING_PAYMENT')}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', cursor: 'pointer' }} onClick={() => navigate('/bills?status=PENDING_PAYMENT')}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>To Pay</div>
-              <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, fontFamily: 'DM Mono, monospace', marginBottom: 12 }}>
-                {fmt(stats.pendingPayAmt).replace('₹', '')}
-              </div>
+              <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, fontFamily: 'DM Mono, monospace', marginBottom: 12 }}>{fmt(stats.pendingPayAmt).replace('₹', '')}</div>
               <div style={{ fontSize: 11, color: 'var(--text3)' }}>{stats.pendingPayCount} bill{stats.pendingPayCount !== 1 ? 's' : ''} ready</div>
             </div>
-
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', overflow: 'hidden' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px' }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Paid This Month</div>
-              <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, fontFamily: 'DM Mono, monospace', marginBottom: 12 }}>
-                {fmt(stats.paidMonth).replace('₹', '')}
-              </div>
+              <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, fontFamily: 'DM Mono, monospace', marginBottom: 12 }}>{fmt(stats.paidMonth).replace('₹', '')}</div>
               <div style={{ fontSize: 11, color: 'var(--text3)' }}>payments processed</div>
             </div>
           </div>
 
-          {/* ── Vendor-wise summary ────────────────────────────── */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>Vendor-wise Summary</div>
-              <button onClick={() => navigate('/vendors')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 12, fontWeight: 600, cur
+              <button onClick={() => navigate('/vendors')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>View all &rarr;</button>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>{['Vendor', 'Total Invoiced', 'Bill Count', 'Pending Bills'].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {vendorSummaryRows.length === 0 ? (
+                  <tr><td colSpan={4} style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No data for this filter.</td></tr>
+                ) : vendorSummaryRows.map((v, i) => (
+                  <tr key={v.vendor_id} className="table-row-hover" style={{ borderBottom: i < vendorSummaryRows.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13 }}>{v.vendor_name}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 13, fontFamily: 'DM Mono, monospace', color: 'var(--primary)' }}>{fmt(v.total_invoiced)}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text2)' }}>{v.count}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: v.pending_count > 0 ? 'var(--yellow)' : 'var(--text3)', fontWeight: v.pending_count > 0 ? 700 : 400 }}>
+                      {v.pending_count > 0 ? `${v.pending_count} bill${v.pending_count !== 1 ? 's' : ''}` : 'None'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
