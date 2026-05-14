@@ -75,6 +75,11 @@ function generateCSV(bills) {
   URL.revokeObjectURL(url)
 }
 
+const EMPTY_CN = { amount: '', reason: '', date: new Date().toISOString().slice(0, 10), cn_number: '' }
+
+// ── Modal label style
+const LBL = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 6 }
+
 export function Bills() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -82,6 +87,14 @@ export function Bills() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const activeTab = searchParams.get('status') || 'ALL'
+
+  // ── Credit Note modal state
+  const [showCN, setShowCN]       = useState(false)
+  const [cnBill, setCnBill]       = useState(null)
+  const [cnForm, setCnForm]       = useState(EMPTY_CN)
+  const [cnSaving, setCnSaving]   = useState(false)
+  const [cnError, setCnError]     = useState('')
+  const [cnSuccess, setCnSuccess] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -111,6 +124,35 @@ export function Bills() {
     setSearchParams(searchParams)
   }
 
+  function openCN(bill) {
+    setCnBill(bill)
+    setCnForm({ ...EMPTY_CN, amount: bill.amount || '' })
+    setCnError('')
+    setCnSuccess(false)
+    setShowCN(true)
+  }
+
+  async function handleSaveCN() {
+    if (!cnForm.amount || Number(cnForm.amount) <= 0) { setCnError('Please enter a valid amount.'); return }
+    if (!cnForm.reason.trim()) { setCnError('Please enter a reason for the credit note.'); return }
+    setCnSaving(true); setCnError('')
+    const payload = {
+      vendor_id:      cnBill.vendor_id,
+      vendor_name:    cnBill.vendors?.name || '',
+      linked_bill_id: cnBill.id,
+      amount:         Number(cnForm.amount),
+      date:           cnForm.date || new Date().toISOString().slice(0, 10),
+      reason:         cnForm.reason.trim(),
+      status:         'PENDING',
+    }
+    if (cnForm.cn_number.trim()) payload.cn_number = cnForm.cn_number.trim()
+    const { error } = await supabase.from('credit_notes').insert(payload)
+    setCnSaving(false)
+    if (error) { setCnError(error.message || 'Failed to save credit note.'); return }
+    setCnSuccess(true)
+    setTimeout(() => { setShowCN(false); setCnBill(null); setCnForm(EMPTY_CN); setCnSuccess(false) }, 1400)
+  }
+
   return (
     <div style={{ padding: '32px 36px', width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
@@ -135,12 +177,8 @@ export function Bills() {
             const isActive = activeTab === key
             return (
               <button key={key} onClick={() => setTab(key)} style={{
-                padding: '6px 14px',
-                borderRadius: 8,
-                border: 'none',
-                fontSize: 12,
-                fontWeight: 600,
-                transition: 'all 0.15s',
+                padding: '6px 14px', borderRadius: 8, border: 'none',
+                fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
                 background: isActive ? 'var(--primary)' : 'transparent',
                 color: isActive ? '#fff' : 'var(--text3)',
               }}>
@@ -188,14 +226,7 @@ export function Bills() {
                     </span>
                   </td>
                   <td style={{ padding: '13px 16px' }}>
-                    <span style={{
-                      fontSize: 11,
-                      background: 'var(--primary-light)',
-                      color: 'var(--primary)',
-                      borderRadius: 6,
-                      padding: '3px 8px',
-                      fontWeight: 600,
-                    }}>
+                    <span style={{ fontSize: 11, background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: 6, padding: '3px 8px', fontWeight: 600 }}>
                       {CAT_LABELS[b.category] || b.category || '—'}
                     </span>
                   </td>
@@ -205,35 +236,4 @@ export function Bills() {
                     </div>
                     {b.due_date && daysUntil(b.due_date) < 0 && <div style={{ fontSize: 10, color: 'var(--red)', fontWeight: 600 }}>OVERDUE</div>}
                   </td>
-                  <td style={{ padding: '13px 16px' }}><StatusBadge status={b.status} /></td>
-                  <td style={{ padding: '13px 16px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button
-                        onClick={e => { e.stopPropagation(); navigate(`/bills/${b.id}`) }}
-                        className="btn-ghost"
-                        style={{ padding: '5px 12px', fontSize: 12 }}
-                      >
-                        Open →
-                      </button>
-                      <button
-                        className="btn-ghost"
-                        style={{ color: 'var(--primary)', fontWeight: 700, padding: '5px 12px', fontSize: 12 }}
-                        onClick={e => { e.stopPropagation(); navigate(`/credit-notes/new?vendor=${b.vendor_id}&bill=${b.id}`); }}
-                      >
-                        CN
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={9} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No bills match the current filter</td></tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  )
-}
-
+     
