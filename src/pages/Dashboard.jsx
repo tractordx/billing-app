@@ -107,14 +107,6 @@ export function Dashboard() {
     <div style={{ padding: '28px 28px', maxWidth: 1400, width: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginBottom: 6 }}>
-            <span style={{ fontSize: 28, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1 }}>MIRAGGIO</span>
-            <span style={{ fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', lineHeight: 1 }}>
-              <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--primary)' }}>S</span>
-              <span style={{ fontSize: 13 }}>M</span>
-              <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--primary)' }}>S</span>
-            </span>
-          </div>
           <h1 style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1 }}>OVERVIEW</h1>
           <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 6 }}>
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}

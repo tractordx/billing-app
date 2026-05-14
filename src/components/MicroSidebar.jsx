@@ -31,14 +31,13 @@ export function MicroSidebar() {
     }}>
       {/* Brand */}
       <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{
-          fontSize: 14,
-          fontWeight: 900,
-          color: 'var(--primary)',
-          letterSpacing: '0.04em',
-          lineHeight: 1.2,
-        }}>
-          MIRAGGIO SMS
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, lineHeight: 1 }}>
+          <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.01em' }}>MIRAGGIO</span>
+          <span style={{ fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.06em' }}>
+            <span style={{ fontSize: 22, fontWeight: 900 }}>S</span>
+            <span style={{ fontSize: 11 }}>M</span>
+            <span style={{ fontSize: 22, fontWeight: 900 }}>S</span>
+          </span>
         </div>
       </div>
 
