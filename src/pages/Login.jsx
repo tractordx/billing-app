@@ -18,34 +18,54 @@ export function Login() {
 
   return (
     <div style={{
-      minHeight: '100vh',
-      background: 'var(--bg)',
+      position: 'fixed',
+      inset: 0,
+      background: 'linear-gradient(135deg, #f0f4ff 0%, #e8ecf7 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       fontFamily: 'Inter, sans-serif',
     }}>
-      <div style={{ width: '100%', maxWidth: 380, padding: '0 20px' }}>
-        {/* Logo */}
+      <div style={{ width: '100%', maxWidth: 420, padding: '0 20px' }}>
+        {/* Logo and Branding */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: '50%',
-            background: 'var(--primary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 900, fontSize: 18, color: '#fff',
-            margin: '0 auto 16px',
-            boxShadow: '0 4px 12px rgba(29,78,216,0.3)',
-          }}>M</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em' }}>Miraggio</div>
-          <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4 }}>Vendor Payments — Sign in</div>
+          {/* Blue Grid Icon */}
+          <svg
+            width="56"
+            height="56"
+            viewBox="0 0 56 56"
+            style={{ margin: '0 auto 20px', display: 'block' }}
+          >
+            <rect x="8" y="8" width="40" height="40" fill="var(--primary)" rx="8" />
+            <g stroke="#fff" strokeWidth="2">
+              <line x1="18" y1="8" x2="18" y2="48" />
+              <line x1="28" y1="8" x2="28" y2="48" />
+              <line x1="38" y1="8" x2="38" y2="48" />
+              <line x1="8" y1="18" x2="48" y2="18" />
+              <line x1="8" y1="28" x2="48" y2="28" />
+              <line x1="8" y1="38" x2="48" y2="38" />
+            </g>
+          </svg>
+          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text)', letterSpacing: '0.04em' }}>
+            MIRAGGIO SMS
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 8, fontWeight: 500 }}>
+            Supply Management System
+          </div>
         </div>
 
-        {/* Form */}
+        {/* Form Card */}
         <form onSubmit={handleLogin}>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-lg)', padding: '28px 24px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text3)', fontWeight: 500 }}>
-                Email
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 20,
+            padding: '40px 32px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, color: 'var(--text3)', fontWeight: 600 }}>
+                Email Address
                 <input
                   type="email"
                   value={email}
@@ -56,7 +76,7 @@ export function Login() {
                   style={{ fontSize: 14 }}
                 />
               </label>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, color: 'var(--text3)', fontWeight: 500 }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, color: 'var(--text3)', fontWeight: 600 }}>
                 Password
                 <input
                   type="password"
@@ -72,13 +92,14 @@ export function Login() {
 
             {error && (
               <div style={{
-                marginTop: 14,
-                padding: '10px 14px',
+                marginTop: 16,
+                padding: '12px 14px',
                 background: 'rgba(239,68,68,0.1)',
                 border: '1px solid rgba(239,68,68,0.3)',
-                borderRadius: 8,
+                borderRadius: 10,
                 color: 'var(--red)',
                 fontSize: 13,
+                fontWeight: 500,
               }}>
                 {error}
               </div>
@@ -88,18 +109,17 @@ export function Login() {
               type="submit"
               className="btn-primary"
               disabled={loading || !email.trim() || !password}
-              style={{ width: '100%', justifyContent: 'center', marginTop: 20, padding: '11px' }}
+              style={{ width: '100%', justifyContent: 'center', marginTop: 24, padding: '12px', fontSize: 14, fontWeight: 700 }}
             >
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </div>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--text3)' }}>
+        <div style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: 'var(--text3)' }}>
           Contact your administrator to get access.
         </div>
       </div>
     </div>
   )
 }
-

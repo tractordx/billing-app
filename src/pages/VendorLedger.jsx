@@ -101,6 +101,27 @@ export function VendorLedger() {
   const totalCN = creditNotes.reduce((s, cn) => s + Number(cn.amount), 0)
   const netOutstanding = totalBilled - totalPaid - totalCN
 
+  function exportLedgerCSV() {
+    const headers = ['Date', 'Type', 'Reference', 'Description', 'Debit', 'Credit', 'Balance']
+    const rows = withBalance.map(e => [
+      fmtDate(e.date),
+      e.type,
+      e.ref,
+      e.description,
+      e.debit > 0 ? fmt(e.debit) : '—',
+      e.credit > 0 ? fmt(e.credit) : '—',
+      fmt(e.balance),
+    ])
+    const csvContent = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ledger-${vendor?.name || id}-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (loading) return <div style={{ padding: '32px 36px', textAlign: 'center' }}>Loading…</div>
   if (!vendor) return <div style={{ padding: '32px 36px', textAlign: 'center', color: 'var(--red)' }}>Vendor not found</div>
 
@@ -155,29 +176,37 @@ export function VendorLedger() {
 
       {/* Ledger Tab */}
       {activeTab === 'ledger' && (
-        <div className="card">
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                {['Date', 'Type', 'Reference', 'Description', 'Debit', 'Credit', 'Balance'].map(h => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text3)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {withBalance.map((e, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '12px 16px', fontSize: 12 }}>{fmtDate(e.date)}</td>
-                  <td style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: 'var(--primary)' }}>{e.type}</td>
-                  <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text2)' }}>{e.ref}</td>
-                  <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text2)' }}>{e.description}</td>
-                  <td className="mono" style={{ padding: '12px 16px', fontSize: 12, color: e.debit > 0 ? 'var(--red)' : 'var(--text3)' }}>{e.debit > 0 ? fmt(e.debit) : '—'}</td>
-                  <td className="mono" style={{ padding: '12px 16px', fontSize: 12, color: e.credit > 0 ? 'var(--green)' : 'var(--text3)' }}>{e.credit > 0 ? fmt(e.credit) : '—'}</td>
-                  <td className="mono" style={{ padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{fmt(e.balance)}</td>
+        <div>
+          <div style={{ marginBottom: 16 }}>
+            <button className="btn-download" onClick={exportLedgerCSV} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Icon name="download" size={14} color="var(--primary)" />
+              Export Ledger
+            </button>
+          </div>
+          <div className="card">
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
+                  {['Date', 'Type', 'Reference', 'Description', 'Debit', 'Credit', 'Balance'].map(h => (
+                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text3)' }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {withBalance.map((e, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '12px 16px', fontSize: 12 }}>{fmtDate(e.date)}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 11, fontWeight: 600, color: 'var(--primary)' }}>{e.type}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text2)' }}>{e.ref}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text2)' }}>{e.description}</td>
+                    <td className="mono" style={{ padding: '12px 16px', fontSize: 12, color: e.debit > 0 ? 'var(--red)' : 'var(--text3)' }}>{e.debit > 0 ? fmt(e.debit) : '—'}</td>
+                    <td className="mono" style={{ padding: '12px 16px', fontSize: 12, color: e.credit > 0 ? 'var(--green)' : 'var(--text3)' }}>{e.credit > 0 ? fmt(e.credit) : '—'}</td>
+                    <td className="mono" style={{ padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{fmt(e.balance)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

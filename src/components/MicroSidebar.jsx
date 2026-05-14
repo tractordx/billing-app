@@ -20,7 +20,7 @@ export function MicroSidebar() {
     <aside style={{
       width: 'var(--side-w)',
       minHeight: '100vh',
-      background: '#ffffff',
+      background: 'var(--surface)',
       borderRight: '1px solid var(--border)',
       display: 'flex',
       flexDirection: 'column',
@@ -30,12 +30,15 @@ export function MicroSidebar() {
       height: '100vh',
     }}>
       {/* Brand */}
-      <div style={{ padding: '20px 20px 18px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontSize: 15, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.03em', lineHeight: 1 }}>
-          miraggio
-        </div>
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>
-          Vendor Payments
+      <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{
+          fontSize: 14,
+          fontWeight: 900,
+          color: 'var(--primary)',
+          letterSpacing: '0.04em',
+          lineHeight: 1.2,
+        }}>
+          MIRAGGIO SMS
         </div>
       </div>
 
@@ -66,10 +69,16 @@ export function MicroSidebar() {
       <div style={{ borderTop: '1px solid var(--border)', padding: '14px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 34, height: 34, borderRadius: '50%',
+            width: 34,
+            height: 34,
+            borderRadius: '50%',
             background: 'var(--primary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 800, fontSize: 13, color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 800,
+            fontSize: 13,
+            color: '#fff',
             flexShrink: 0,
           }}>
             {(profile?.name || profile?.email || 'M')[0].toUpperCase()}
@@ -85,7 +94,18 @@ export function MicroSidebar() {
           <button
             onClick={signOut}
             title="Sign out"
-            style={{ background: 'none', border: 'none', padding: 4, color: 'var(--text3)', cursor: 'pointer', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 4,
+              color: 'var(--text3)',
+              cursor: 'pointer',
+              borderRadius: 6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
             onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
@@ -96,4 +116,3 @@ export function MicroSidebar() {
     </aside>
   )
 }
-

@@ -7,11 +7,11 @@ import { Bills } from './pages/Bills'
 import { BillDetail } from './pages/BillDetail'
 import { Vendors } from './pages/Vendors'
 import { VendorDetail } from './pages/VendorDetail'
+import { VendorLedger } from './pages/VendorLedger'
 import { Contracts } from './pages/Contracts'
 import { Payments } from './pages/Payments'
 import { Login } from './pages/Login'
 import { Users } from './pages/Users'
-import { VendorLedger } from './pages/VendorLedger'
 
 function ProtectedRoute({ children }) {
   const { session, loading, profile } = useAuth()
