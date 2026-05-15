@@ -5,9 +5,9 @@ import { fmt, fmtDate, daysUntil } from '../lib/utils'
 import { Icon } from '../components/Icon'
 
 const TH = {
-  padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600,
+  padding: '11px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600,
   color: 'var(--text3)', letterSpacing: '0.04em', textTransform: 'uppercase',
-  borderBottom: '1px solid var(--border)',
+  borderBottom: '1px solid var(--border)', background: 'var(--surface2)',
 }
 
 const DATE_OPTIONS = [
@@ -42,10 +42,29 @@ const pillSelect = {
   outline: 'none',
   appearance: 'none',
   WebkitAppearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
   backgroundRepeat: 'no-repeat',
   backgroundPosition: 'right 10px center',
+  minWidth: 180,
 }
+
+// Equal-height metric card; numbers can change without resizing.
+const cardStyle = {
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-lg)',
+  padding: '22px',
+  boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)',
+  cursor: 'pointer',
+  minHeight: 152,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+}
+const cardTitle  = { fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase' }
+const cardSub    = { fontSize: 11, color: 'var(--text3)' }
+const cardBigVal = { fontSize: 38, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }
+const cardMoney  = { fontSize: 28, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, fontFamily: 'DM Mono, monospace', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
 
 export function Dashboard() {
   const navigate = useNavigate()
@@ -86,8 +105,16 @@ export function Dashboard() {
     const pendingL1 = bills.filter(b => b.status === 'PENDING_L1').length
     const pendingL2 = bills.filter(b => b.status === 'PENDING_L2').length
     const payBills  = bills.filter(b => b.status === 'PENDING_PAYMENT')
-    const paidMonth = bills.filter(b => b.status === 'PAID' && new Date(b.created_at) >= monthStart).reduce((s, b) => s + Number(b.amount), 0)
-    return { pendingL1, pendingL2, pendingPayAmt: payBills.reduce((s, b) => s + Number(b.amount), 0), pendingPayCount: payBills.length, paidMonth }
+    const paidBills = bills.filter(b => b.status === 'PAID' && new Date(b.created_at) >= monthStart)
+    const paidMonth = paidBills.reduce((s, b) => s + Number(b.amount), 0)
+    return {
+      pendingL1,
+      pendingL2,
+      pendingPayAmt:   payBills.reduce((s, b) => s + Number(b.amount), 0),
+      pendingPayCount: payBills.length,
+      paidMonth,
+      paidMonthCount:  paidBills.length,
+    }
   }, [bills])
 
   const vendorSummaryRows = useMemo(() => {
@@ -104,19 +131,20 @@ export function Dashboard() {
   const now = new Date()
 
   return (
-    <div style={{ padding: '28px 28px', maxWidth: 1400, width: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
+    /* Full-width container — no maxWidth clamp so filters don't shift layout */
+    <div style={{ padding: '24px 24px', width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28, gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: 32, fontWeight: 900, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1 }}>OVERVIEW</h1>
           <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 6 }}>
             {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={pillSelect}>
             {DATE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          <select value={vendorFilter} onChange={e => setVendorFilter(e.target.value)} style={pillSelect}>
+          <select value={vendorFilter} onChange={e => setVendorFilter(e.target.value)} style={{ ...pillSelect, minWidth: 260 }}>
             <option value="all">All Vendors</option>
             {uniqueVendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
           </select>
@@ -127,35 +155,43 @@ export function Dashboard() {
         <div style={{ color: 'var(--text3)', padding: '40px 0', fontSize: 13 }}>Loading data...</div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', cursor: 'pointer' }} onClick={() => navigate('/bills?status=PENDING_L1')}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Awaiting L1</div>
-              <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, marginBottom: 12 }}>{stats.pendingL1}</div>
-              <div style={{ fontSize: 11, color: 'var(--text3)' }}>bills pending approval</div>
+          {/* Cards: equal-width grid via minmax(0, 1fr) — stable across filters */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16, marginBottom: 22 }}>
+            <div style={cardStyle} onClick={() => navigate('/bills?status=PENDING_L1')}>
+              <div style={cardTitle}>Awaiting L1</div>
+              <div style={cardBigVal}>{stats.pendingL1}</div>
+              <div style={cardSub}>L1 approval pending</div>
             </div>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', cursor: 'pointer' }} onClick={() => navigate('/bills?status=PENDING_L2')}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Awaiting L2</div>
-              <div style={{ fontSize: 38, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, marginBottom: 12 }}>{stats.pendingL2}</div>
-              <div style={{ fontSize: 11, color: 'var(--text3)' }}>bills in approval</div>
+            <div style={cardStyle} onClick={() => navigate('/bills?status=PENDING_L2')}>
+              <div style={cardTitle}>Awaiting L2</div>
+              <div style={cardBigVal}>{stats.pendingL2}</div>
+              <div style={cardSub}>L2 approval pending</div>
             </div>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px', cursor: 'pointer' }} onClick={() => navigate('/bills?status=PENDING_PAYMENT')}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>To Pay</div>
-              <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, fontFamily: 'DM Mono, monospace', marginBottom: 12 }}>{fmt(stats.pendingPayAmt).replace('₹', '')}</div>
-              <div style={{ fontSize: 11, color: 'var(--text3)' }}>{stats.pendingPayCount} bill{stats.pendingPayCount !== 1 ? 's' : ''} ready</div>
+            <div style={cardStyle} onClick={() => navigate('/bills?status=PENDING_PAYMENT')}>
+              <div style={cardTitle}>To Pay Amount</div>
+              <div style={cardMoney}>{fmt(stats.pendingPayAmt).replace('₹', '')}</div>
+              <div style={cardSub}>Number of Invoice: {stats.pendingPayCount}</div>
             </div>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '22px' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 12 }}>Paid This Month</div>
-              <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 1, fontFamily: 'DM Mono, monospace', marginBottom: 12 }}>{fmt(stats.paidMonth).replace('₹', '')}</div>
-              <div style={{ fontSize: 11, color: 'var(--text3)' }}>payments processed</div>
+            <div style={{ ...cardStyle, cursor: 'default' }}>
+              <div style={cardTitle}>Amount This Month</div>
+              <div style={cardMoney}>{fmt(stats.paidMonth).replace('₹', '')}</div>
+              <div style={cardSub}>Number of Invoice: {stats.paidMonthCount}</div>
             </div>
           </div>
 
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+          <div className="card">
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: 13, fontWeight: 700 }}>Vendor-wise Summary</div>
               <button onClick={() => navigate('/vendors')} style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>View all &rarr;</button>
             </div>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            {/* Fixed table layout so column widths don't shift on filter */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+              <colgroup>
+                <col style={{ width: '46%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '16%' }} />
+              </colgroup>
               <thead>
                 <tr>{['Vendor', 'Total Invoiced', 'Bill Count', 'Pending Bills'].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
               </thead>
@@ -164,10 +200,12 @@ export function Dashboard() {
                   <tr><td colSpan={4} style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No data for this filter.</td></tr>
                 ) : vendorSummaryRows.map((v, i) => (
                   <tr key={v.vendor_id} className="table-row-hover" style={{ borderBottom: i < vendorSummaryRows.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, fontSize: 13 }}>{v.vendor_name}</td>
-                    <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 13, fontFamily: 'DM Mono, monospace', color: 'var(--primary)' }}>{fmt(v.total_invoiced)}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text2)' }}>{v.count}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: v.pending_count > 0 ? 'var(--yellow)' : 'var(--text3)', fontWeight: v.pending_count > 0 ? 700 : 400 }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 600, fontSize: 13 }}>
+                      <span className="clamp-2">{v.vendor_name}</span>
+                    </td>
+                    <td style={{ padding: '10px 12px', fontWeight: 700, fontSize: 13, fontFamily: 'DM Mono, monospace', color: 'var(--primary)' }}>{fmt(v.total_invoiced)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 13, color: 'var(--text2)' }}>{v.count}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 13, color: v.pending_count > 0 ? '#b45309' : 'var(--text3)', fontWeight: v.pending_count > 0 ? 700 : 400 }}>
                       {v.pending_count > 0 ? `${v.pending_count} bill${v.pending_count !== 1 ? 's' : ''}` : 'None'}
                     </td>
                   </tr>

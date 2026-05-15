@@ -7,6 +7,16 @@ export const fmtDate = (d) =>
 export const fmtDateShort = (d) =>
   d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'
 
+/* DD-MM-YY (e.g. 01-05-26) — used for bill due dates */
+export const fmtDateDDMMYY = (d) => {
+  if (!d) return '—'
+  const x = new Date(d)
+  const dd = String(x.getDate()).padStart(2, '0')
+  const mm = String(x.getMonth() + 1).padStart(2, '0')
+  const yy = String(x.getFullYear()).slice(-2)
+  return `${dd}-${mm}-${yy}`
+}
+
 export const daysUntil = (d) => Math.ceil((new Date(d) - Date.now()) / 86400000)
 
 export const daysAgo = (d) => {
@@ -18,7 +28,7 @@ export const daysAgo = (d) => {
 
 export const STATUS_CONFIG = {
   PENDING_L1:      { label: 'AWAITING L1',    color: 'var(--yellow)', dot: 'var(--yellow)' },
-  PENDING_L2:      { label: 'AWAITING L2',     color: '#ffaa00',       dot: '#ffaa00' },
+  PENDING_L2:      { label: 'AWAITING L2',     color: 'var(--sky)',    dot: 'var(--sky)' },
   PENDING_PAYMENT: { label: 'PENDING PAYMENT', color: 'var(--amber)',  dot: 'var(--amber)' },
   PAID:            { label: 'PAID',            color: 'var(--green)',  dot: 'var(--green)' },
   REJECTED_L1:     { label: 'REJECTED L1',     color: 'var(--red)',    dot: 'var(--red)' },

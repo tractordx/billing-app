@@ -4,49 +4,49 @@ import { supabase } from '../lib/supabase'
 import { fmt, fmtDate, daysUntil } from '../lib/utils'
 import { Icon } from '../components/Icon'
 
-const TH = { padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.03em', whiteSpace: 'nowrap' }
-const LBL = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 6 }
+const TH = { padding:'11px 16px', textAlign:'left', fontSize:11, fontWeight:600, color:'var(--text3)', letterSpacing:'0.04em', textTransform:'uppercase', whiteSpace:'nowrap', background:'var(--surface2)', borderBottom:'1px solid var(--border)' }
+const LBL = { display:'block', fontSize:12, fontWeight:600, color:'var(--text3)', marginBottom:6 }
 
 function StatusTag({ status, expiry_date }) {
   if (status) {
     const s = status.toUpperCase()
     if (s === 'SIGNED' || s === 'ACTIVE')
-      return <span style={{ background: 'var(--green-light)', color: 'var(--green)', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Signed</span>
+      return <span style={{ background: 'var(--green-light)', color: '#15803d', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Signed</span>
     if (s === 'EXPIRED')
-      return <span style={{ background: 'var(--red-light)', color: 'var(--red)', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Expired</span>
+      return <span style={{ background: 'var(--red-light)', color: '#dc2626', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Expired</span>
     if (s === 'PENDING' || s === 'NOT RECEIVED' || s === 'NOT_RECEIVED')
-      return <span style={{ background: 'var(--yellow-light)', color: 'var(--yellow)', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Pending</span>
+      return <span style={{ background: 'var(--yellow-light)', color: '#b45309', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Pending</span>
     if (s === 'NO AGREEMENT' || s === 'NO_AGREEMENT')
       return <span style={{ background: 'var(--surface3)', color: 'var(--text3)', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>No Agreement</span>
     return <span style={{ background: 'var(--surface2)', color: 'var(--text2)', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>{status}</span>
   }
   if (expiry_date) {
     const days = daysUntil(expiry_date)
-    if (days < 0)   return <span style={{ background: 'var(--red-light)', color: 'var(--red)', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Expired</span>
-    if (days <= 30) return <span style={{ background: 'var(--yellow-light)', color: 'var(--yellow)', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Exp in {days}d</span>
-    return <span style={{ background: 'var(--green-light)', color: 'var(--green)', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Active</span>
+    if (days < 0)   return <span style={{ background: 'var(--red-light)', color: '#dc2626', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Expired</span>
+    if (days <= 30) return <span style={{ background: 'var(--yellow-light)', color: '#b45309', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Exp in {days}d</span>
+    return <span style={{ background: 'var(--green-light)', color: '#15803d', borderRadius: 99, padding: '4px 10px', fontSize: 11, fontWeight: 600 }}>Active</span>
   }
   return <span style={{ fontSize: 11, color: 'var(--text3)' }}>—</span>
 }
 
 function PdfLink({ url, label }) {
-  if (!url || !url.trim()) return <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span>
+  if (!url || !url.trim()) return null
   return (
     <a
       href={url.trim()}
       target="_blank"
       rel="noopener noreferrer"
+      title={label}
       onClick={e => e.stopPropagation()}
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        fontSize: 12, fontWeight: 600, color: 'var(--primary)',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 26, height: 26,
+        color: 'var(--primary)',
         background: 'var(--primary-light)', borderRadius: 6,
-        padding: '4px 10px', textDecoration: 'none',
-        border: '1px solid rgba(29,78,216,0.15)',
-        whiteSpace: 'nowrap',
+        border: '1px solid rgba(29,78,216,0.15)', textDecoration: 'none',
       }}
     >
-      📄 {label}
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     </a>
   )
 }
@@ -95,7 +95,6 @@ export function Contracts() {
     setLoading(false)
   }
 
-  // ── Add Agreement ─────────────────────────────────────────
   async function handleAddAgreement(e) {
     e.preventDefault()
     setAgError('')
@@ -131,7 +130,6 @@ export function Contracts() {
     })
   }
 
-  // ── Add Addendum ──────────────────────────────────────────
   async function handleAddAddendum() {
     setAdError('')
     if (!adForm.agreement_id) { setAdError('Please select an agreement.'); return }
@@ -152,39 +150,33 @@ export function Contracts() {
 
   const filtered = agreements.filter(a => {
     const q = search.toLowerCase()
-    const name = (a.trade_name || a.trade_name || '').toLowerCase()
+    const name = (a.trade_name || '').toLowerCase()
     const desc = (a.service_description || '').toLowerCase()
     return !q || name.includes(q) || desc.includes(q)
   })
 
   return (
-    <div style={{ padding: '32px 36px', width: '100%' }}>
-
-      {/* ── Page header ──────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+    /* Full-width container — flush beside sidebar */
+    <div style={{ padding: '24px 24px', width: '100%' }}>
+      {/* ── Header ─────────────────────────────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text)' }}>Agreements</h1>
           <div style={{ color: 'var(--text3)', fontSize: 13, marginTop: 4 }}>{agreements.length} agreements on file</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            className="btn-ghost"
-            style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}
-            onClick={() => { setAdForm(EMPTY_AD); setAdError(''); setAdSuccess(false); setShowAdForm(true) }}
-          >
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}
+            onClick={() => { setAdForm(EMPTY_AD); setAdError(''); setAdSuccess(false); setShowAdForm(true) }}>
             <Icon name="plus" size={13} /> Add Addendum
           </button>
-          <button
-            className="btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: 6 }}
-            onClick={() => { setAgForm(EMPTY_AG); setAgError(''); setShowAgForm(true) }}
-          >
+          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            onClick={() => { setAgForm(EMPTY_AG); setAgError(''); setShowAgForm(true) }}>
             <Icon name="plus" size={14} color="#fff" /> Add Agreement
           </button>
         </div>
       </div>
 
-      {/* ── Search ───────────────────────────────────────────── */}
+      {/* ── Search ─────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius)', padding: '8px 14px', maxWidth: 320 }}>
           <Icon name="search" size={14} color="var(--text3)" />
@@ -192,53 +184,68 @@ export function Contracts() {
         </div>
       </div>
 
-      {/* ── Table ────────────────────────────────────────────── */}
+      {/* ── Table ──────────────────────────────────────────── */}
       <div className="card">
         {loading ? (
           <div style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>Loading…</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                {['Trade Name', 'Service', 'Max Amount', 'Cycle', 'Valid Period', 'Terms', 'Status', 'Agreement', 'Addendum'].map(h => (
-                  <th key={h} style={TH}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((a, i) => (
-                <tr key={a.id} className="table-row-hover" style={{ borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  <td style={{ padding: '13px 16px' }}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{a.trade_name || '—'}</div>
-                    {false && (
-                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{a.vendors.name}</div>
-                    )}
-                  </td>
-                  <td style={{ padding: '13px 16px', fontSize: 13, color: 'var(--text2)', maxWidth: 180 }}>
-                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.service_description || '—'}</div>
-                  </td>
-                  <td style={{ padding: '13px 16px' }}>
-                    <span className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{a.max_amount ? fmt(a.max_amount) : '—'}</span>
-                  </td>
-                  <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text2)', textTransform: 'capitalize' }}>
-                    {a.billing_cycle ? a.billing_cycle.toLowerCase() : '—'}
-                  </td>
-                  <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
-                    {a.start_date ? fmtDate(a.start_date) : '—'}
-                    <span style={{ margin: '0 4px', opacity: 0.4 }}>→</span>
-                    {a.expiry_date ? fmtDate(a.expiry_date) : '—'}
-                  </td>
-                  <td style={{ padding: '13px 16px', fontSize: 12, color: 'var(--text2)' }}>{a.payment_terms_days ? `${a.payment_terms_days}d` : '—'}</td>
-                  <td style={{ padding: '13px 16px' }}><StatusTag status={a.status} expiry_date={a.expiry_date} /></td>
-                  <td style={{ padding: '13px 16px' }}><PdfLink url={a.agreement_url} label="View PDF" /></td>
-                  <td style={{ padding: '13px 16px' }}><PdfLink url={a.agreement_url2} label="Addendum" /></td>
+          /* Horizontal-scroll wrapper guarantees nothing clips off-screen */
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', minWidth: 920 }}>
+              <colgroup>
+                <col style={{ width: '19%' }} />
+                <col style={{ width: '19%' }} />
+                <col style={{ width: '12%' }} />
+                <col style={{ width: '8%' }}  />
+                <col style={{ width: '16%' }} />
+                <col style={{ width: '7%' }}  />
+                <col style={{ width: '11%' }} />
+                <col style={{ width: '8%' }}  />
+              </colgroup>
+              <thead>
+                <tr>
+                  {['Trade Name', 'Service', 'Max Amount', 'Cycle', 'Valid Period', 'Terms', 'Status', 'Docs'].map(h => (
+                    <th key={h} style={TH}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr><td colSpan={9} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No agreements found</td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map((a, i) => (
+                  <tr key={a.id} className="table-row-hover" style={{ borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <td style={{ padding: '10px 12px' }}>
+                      <div className="clamp-2" style={{ fontWeight: 600, fontSize: 12.5, lineHeight: 1.35 }} title={a.trade_name || ''}>{a.trade_name || '—'}</div>
+                    </td>
+                    <td style={{ padding: '10px 12px', fontSize: 12.5, color: 'var(--text2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={a.service_description || ''}>
+                      {a.service_description || '—'}
+                    </td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <span className="mono" style={{ fontWeight: 600, fontSize: 12.5 }}>{a.max_amount ? fmt(a.max_amount) : '—'}</span>
+                    </td>
+                    <td style={{ padding: '10px 12px', fontSize: 11.5, color: 'var(--text2)', textTransform: 'capitalize' }}>
+                      {a.billing_cycle ? a.billing_cycle.toLowerCase() : '—'}
+                    </td>
+                    <td style={{ padding: '10px 12px', fontSize: 11.5, color: 'var(--text3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {a.start_date ? fmtDate(a.start_date) : '—'}
+                      <span style={{ margin: '0 4px', opacity: 0.4 }}>→</span>
+                      {a.expiry_date ? fmtDate(a.expiry_date) : '—'}
+                    </td>
+                    <td style={{ padding: '10px 12px', fontSize: 11.5, color: 'var(--text2)' }}>{a.payment_terms_days ? `${a.payment_terms_days}d` : '—'}</td>
+                    <td style={{ padding: '10px 12px' }}><StatusTag status={a.status} expiry_date={a.expiry_date} /></td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        {a.agreement_url  ? <PdfLink url={a.agreement_url}  label="Agreement" /> : null}
+                        {a.agreement_url2 ? <PdfLink url={a.agreement_url2} label="Addendum" /> : null}
+                        {!a.agreement_url && !a.agreement_url2 && <span style={{ fontSize: 11, color: 'var(--text3)' }}>—</span>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={8} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No agreements found</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -247,7 +254,6 @@ export function Contracts() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={e => { if (e.target === e.currentTarget) setShowAgForm(false) }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-lg)', width: 560, maxHeight: '92vh', overflowY: 'auto', animation: 'fadeUp 0.2s ease both' }}>
-
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>Add Agreement</div>
@@ -257,7 +263,6 @@ export function Contracts() {
                 <Icon name="x" size={18} />
               </button>
             </div>
-
             <form onSubmit={handleAddAgreement} style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={LBL}>Vendor</label>
@@ -321,7 +326,7 @@ export function Contracts() {
                 <input className="input-base" type="url" value={agForm.agreement_url2} onChange={e => agChange('agreement_url2', e.target.value)} placeholder="https://…" style={{ width: '100%' }} />
               </div>
               {agError && (
-                <div style={{ background: 'var(--red-light)', color: 'var(--red)', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 13 }}>{agError}</div>
+                <div style={{ background: 'var(--red-light)', color: '#dc2626', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 13 }}>{agError}</div>
               )}
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
                 <button type="button" className="btn-ghost" onClick={() => setShowAgForm(false)} disabled={agSaving}>Cancel</button>
@@ -337,7 +342,6 @@ export function Contracts() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           onClick={e => { if (e.target === e.currentTarget) setShowAdForm(false) }}>
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-lg)', width: 480, animation: 'fadeUp 0.2s ease both', overflow: 'hidden' }}>
-
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>Add Addendum</div>
@@ -347,7 +351,6 @@ export function Contracts() {
                 <Icon name="x" size={18} />
               </button>
             </div>
-
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={LBL}>Agreement *</label>
@@ -355,31 +358,23 @@ export function Contracts() {
                   <option value="">Select agreement…</option>
                   {agreements.map(a => (
                     <option key={a.id} value={a.id}>
-                      {a.trade_name || a.trade_name || 'Unnamed'}{a.service_description ? ` — ${a.service_description.slice(0, 40)}` : ''}
+                      {a.trade_name || 'Unnamed'}{a.service_description ? ` — ${a.service_description.slice(0, 40)}` : ''}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
                 <label style={LBL}>Addendum PDF URL *</label>
-                <input
-                  className="input-base"
-                  type="url"
-                  value={adForm.addendum_url}
-                  onChange={e => setAdForm(p => ({ ...p, addendum_url: e.target.value }))}
-                  placeholder="https://supabase.co/storage/…"
-                  style={{ width: '100%' }}
-                />
+                <input className="input-base" type="url" value={adForm.addendum_url} onChange={e => setAdForm(p => ({ ...p, addendum_url: e.target.value }))} placeholder="https://supabase.co/storage/…" style={{ width: '100%' }} />
                 <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6 }}>Paste the signed URL from your Supabase storage bucket</div>
               </div>
               {adError && (
-                <div style={{ background: 'var(--red-light)', color: 'var(--red)', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 13 }}>{adError}</div>
+                <div style={{ background: 'var(--red-light)', color: '#dc2626', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 13 }}>{adError}</div>
               )}
               {adSuccess && (
-                <div style={{ background: 'var(--green-light)', color: 'var(--green)', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 13, fontWeight: 600 }}>Addendum linked successfully!</div>
+                <div style={{ background: 'var(--green-light)', color: '#15803d', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 13, fontWeight: 600 }}>Addendum linked successfully!</div>
               )}
             </div>
-
             <div style={{ padding: '14px 24px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn-ghost" onClick={() => setShowAdForm(false)} disabled={adSaving}>Cancel</button>
               <button className="btn-primary" onClick={handleAddAddendum} disabled={adSaving || adSuccess}>{adSaving ? 'Saving…' : 'Link Addendum'}</button>

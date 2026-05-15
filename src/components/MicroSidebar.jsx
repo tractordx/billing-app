@@ -1,9 +1,25 @@
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { Icon } from './Icon'
 import { useAuth } from '../contexts/AuthContext'
 
+const SIDEBAR_KEY = 'miraggio-sidebar'
+const COLLAPSED_W = 64
+const EXPANDED_W  = 232
+
 export function MicroSidebar() {
   const { isAdmin, profile, role, signOut } = useAuth()
+
+  // Collapsed by default; toggled by clicking the MIRAGGIO SmS brand
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem(SIDEBAR_KEY) !== 'expanded' } catch { return true }
+  })
+
+  useEffect(() => {
+    try { localStorage.setItem(SIDEBAR_KEY, collapsed ? 'collapsed' : 'expanded') } catch {}
+    // Keep the global --side-w in sync so any other layout that reads it adjusts too
+    document.documentElement.style.setProperty('--side-w', `${collapsed ? COLLAPSED_W : EXPANDED_W}px`)
+  }, [collapsed])
 
   const NAV = [
     { to: '/',           icon: 'dashboard', label: 'Dashboard'  },
@@ -18,7 +34,7 @@ export function MicroSidebar() {
 
   return (
     <aside style={{
-      width: 'var(--side-w)',
+      width: collapsed ? COLLAPSED_W : EXPANDED_W,
       minHeight: '100vh',
       background: 'var(--surface)',
       borderRight: '1px solid var(--border)',
@@ -28,36 +44,80 @@ export function MicroSidebar() {
       position: 'sticky',
       top: 0,
       height: '100vh',
+      overflow: 'hidden',
+      transition: 'width 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
     }}>
-      {/* Brand */}
-      <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, lineHeight: 1 }}>
-          <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.01em' }}>MIRAGGIO</span>
-          <span style={{ fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.06em' }}>
-            <span style={{ fontSize: 22, fontWeight: 900 }}>S</span>
-            <span style={{ fontSize: 11 }}>M</span>
-            <span style={{ fontSize: 22, fontWeight: 900 }}>S</span>
+      {/* Brand — click to toggle */}
+      <div
+        onClick={() => setCollapsed(c => !c)}
+        title={collapsed ? 'Expand menu' : 'Collapse menu'}
+        style={{
+          padding: collapsed ? '22px 0 18px' : '22px 20px 18px',
+          borderBottom: '1px solid var(--border)',
+          cursor: 'pointer',
+          userSelect: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          minHeight: 60,
+          whiteSpace: 'nowrap',
+          transition: 'background 0.15s, padding 0.22s',
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+      >
+        {collapsed ? (
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'baseline',
+            color: 'var(--primary)',
+            fontWeight: 900,
+            letterSpacing: '0.04em',
+            lineHeight: 1,
+          }}>
+            <span style={{ fontSize: 19, fontWeight: 900 }}>S</span>
+            <span style={{ fontSize: 10, position: 'relative', top: -2, margin: '0 1px' }}>M</span>
+            <span style={{ fontSize: 19, fontWeight: 900 }}>S</span>
           </span>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, lineHeight: 1 }}>
+            <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.01em' }}>MIRAGGIO</span>
+            <span style={{ fontWeight: 700, color: 'var(--primary)', letterSpacing: '0.06em' }}>
+              <span style={{ fontSize: 22, fontWeight: 900 }}>S</span>
+              <span style={{ fontSize: 11 }}>M</span>
+              <span style={{ fontSize: 22, fontWeight: 900 }}>S</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Nav */}
-      <nav style={{ flex: 1, paddingTop: 10, paddingBottom: 10, overflowY: 'auto' }}>
+      <nav style={{ flex: 1, paddingTop: 10, paddingBottom: 10, overflowY: 'auto', overflowX: 'hidden' }}>
         {NAV.map(({ to, icon, label }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
             style={{ display: 'block', textDecoration: 'none' }}
+            title={collapsed ? label : ''}
           >
             {({ isActive }) => (
-              <div className={`sidebar-nav-link${isActive ? ' active' : ''}`}>
+              <div
+                className={`sidebar-nav-link${isActive ? ' active' : ''}`}
+                style={collapsed ? {
+                  justifyContent: 'center',
+                  padding: '9px 0',
+                  margin: '2px 6px',
+                  borderLeft: '3px solid transparent',
+                  whiteSpace: 'nowrap',
+                } : { whiteSpace: 'nowrap' }}
+              >
                 <Icon
                   name={icon}
-                  size={15}
+                  size={16}
                   color={isActive ? 'var(--primary)' : 'var(--text3)'}
                 />
-                {label}
+                {!collapsed && label}
               </div>
             )}
           </NavLink>
@@ -65,52 +125,52 @@ export function MicroSidebar() {
       </nav>
 
       {/* User profile */}
-      <div style={{ borderTop: '1px solid var(--border)', padding: '14px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 34,
-            height: 34,
-            borderRadius: '50%',
+      <div style={{
+        borderTop: '1px solid var(--border)',
+        padding: collapsed ? '14px 0' : '14px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+        gap: 10,
+        whiteSpace: 'nowrap',
+      }}>
+        <div
+          title={collapsed ? `${profile?.name || profile?.email?.split('@')[0] || 'User'} — ${roleLabel}` : ''}
+          style={{
+            width: 34, height: 34, borderRadius: '50%',
             background: 'var(--primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: 13,
-            color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontWeight: 800, fontSize: 13, color: '#fff',
             flexShrink: 0,
           }}>
-            {(profile?.name || profile?.email || 'M')[0].toUpperCase()}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {profile?.name || profile?.email?.split('@')[0] || 'User'}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {roleLabel}
-            </div>
-          </div>
-          <button
-            onClick={signOut}
-            title="Sign out"
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 4,
-              color: 'var(--text3)',
-              cursor: 'pointer',
-              borderRadius: 6,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          >
-            <Icon name="x" size={14} color="var(--text3)" />
-          </button>
+          {(profile?.name || profile?.email || 'M')[0].toUpperCase()}
         </div>
+        {!collapsed && (
+          <>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {profile?.name || profile?.email?.split('@')[0] || 'User'}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {roleLabel}
+              </div>
+            </div>
+            <button
+              onClick={signOut}
+              title="Sign out"
+              style={{
+                background: 'none', border: 'none', padding: 4,
+                color: 'var(--text3)', cursor: 'pointer', borderRadius: 6,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              <Icon name="x" size={14} color="var(--text3)" />
+            </button>
+          </>
+        )}
       </div>
     </aside>
   )

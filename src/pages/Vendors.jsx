@@ -6,10 +6,10 @@ import { fmtDate } from '../lib/utils'
 import { StatusBadge } from '../components/StatusBadge'
 import { Icon } from '../components/Icon'
 
-const TH = { padding:'10px 16px', textAlign:'left', fontSize:11, fontWeight:600, color:'var(--text3)', letterSpacing:'0.03em' }
+const TH = { padding:'11px 16px', textAlign:'left', fontSize:11, fontWeight:600, color:'var(--text3)', letterSpacing:'0.04em', textTransform:'uppercase', background:'var(--surface2)', borderBottom:'1px solid var(--border)' }
 const STATUS_TABS = ['ALL','ACTIVE','PENDING','INACTIVE']
 const VENDOR_CATEGORIES = ['ALL','SERVICE','PRODUCT']
-const EMPTY_FORM = { name:'', email:'', phone:'', contact_person:'', gstin:'', pan:'', vendor_code:'', category:'SERVICE', bank_name:'', bank_account_no:'', bank_ifsc:'', bank_account_name:'' }
+const EMPTY_FORM = { name:'', email:'', phone:'', contact_person:'', gstin:'', pan:'', vendor_code:'', category:'SERVICE', service_description:'', bank_name:'', bank_account_no:'', bank_ifsc:'', bank_account_name:'' }
 
 function Section({ title }) {
   return (
@@ -90,8 +90,9 @@ export function Vendors() {
   })
 
   return (
-    <div style={{padding:'32px 36px',width:'100%'}}>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:28}}>
+    /* Full-width container — sits flush beside sidebar, fills remaining width */
+    <div style={{padding:'24px 24px',width:'100%'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:28,gap:16,flexWrap:'wrap'}}>
         <div>
           <h1 style={{fontSize:26,fontWeight:800,letterSpacing:'-0.03em',color:'var(--text)'}}>Vendors</h1>
           <div style={{color:'var(--text3)',fontSize:13,marginTop:4}}>{vendors.length} registered</div>
@@ -99,7 +100,7 @@ export function Vendors() {
         {role==='admin'&&<button className="btn-primary" onClick={()=>setShowForm(true)} style={{display:'flex',alignItems:'center',gap:6}}><Icon name="plus" size={14} color="#fff" /> Add Vendor</button>}
       </div>
 
-      {loadError&&<div style={{marginBottom:18,padding:'12px 16px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'var(--radius)',color:'var(--red)',fontSize:13}}>{loadError}</div>}
+      {loadError&&<div style={{marginBottom:18,padding:'12px 16px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'var(--radius)',color:'#dc2626',fontSize:13}}>{loadError}</div>}
 
       {showForm&&(
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)'}}>
@@ -118,6 +119,7 @@ export function Vendors() {
               <label style={{display:'flex',flexDirection:'column',gap:6,fontSize:12,fontWeight:600,color:'var(--text3)'}}>Phone<input value={form.phone} onChange={e=>setForm(p=>({...p,phone:e.target.value}))} className="input-base" placeholder="+91..." style={{fontSize:13}} /></label>
               <label style={{display:'flex',flexDirection:'column',gap:6,fontSize:12,fontWeight:600,color:'var(--text3)'}}>Contact Person<input value={form.contact_person} onChange={e=>setForm(p=>({...p,contact_person:e.target.value}))} className="input-base" placeholder="Name" style={{fontSize:13}} /></label>
               <label style={{display:'flex',flexDirection:'column',gap:6,fontSize:12,fontWeight:600,color:'var(--text3)'}}>Category<select value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))} className="input-base" style={{fontSize:13}}><option value="SERVICE">Service</option><option value="PRODUCT">Product</option></select></label>
+              <label style={{display:'flex',flexDirection:'column',gap:6,fontSize:12,fontWeight:600,color:'var(--text3)',gridColumn:'span 2'}}>Service Description<textarea value={form.service_description} onChange={e=>setForm(p=>({...p,service_description:e.target.value}))} className="input-base" rows={3} style={{fontSize:13,resize:'vertical'}} placeholder="Describe the services or products this vendor provides…" /></label>
               <Section title="Tax and Compliance" />
               <label style={{display:'flex',flexDirection:'column',gap:6,fontSize:12,fontWeight:600,color:'var(--text3)'}}>GSTIN<input value={form.gstin} onChange={e=>setForm(p=>({...p,gstin:e.target.value}))} className="input-base" placeholder="15-character GST number" style={{fontSize:13}} /></label>
               <label style={{display:'flex',flexDirection:'column',gap:6,fontSize:12,fontWeight:600,color:'var(--text3)'}}>PAN<input value={form.pan} onChange={e=>setForm(p=>({...p,pan:e.target.value}))} className="input-base" placeholder="10-character PAN" style={{fontSize:13}} /></label>
@@ -128,8 +130,8 @@ export function Vendors() {
               <label style={{display:'flex',flexDirection:'column',gap:6,fontSize:12,fontWeight:600,color:'var(--text3)'}}>Account Number<input value={form.bank_account_no} onChange={e=>setForm(p=>({...p,bank_account_no:e.target.value}))} className="input-base" placeholder="Account number" style={{fontSize:13}} /></label>
               <label style={{display:'flex',flexDirection:'column',gap:6,fontSize:12,fontWeight:600,color:'var(--text3)'}}>Account Holder Name<input value={form.bank_account_name} onChange={e=>setForm(p=>({...p,bank_account_name:e.target.value}))} className="input-base" placeholder="Name on account" style={{fontSize:13}} /></label>
             </div>
-            {success&&<div style={{margin:'0 28px 14px',padding:'12px 16px',background:'rgba(34,197,94,0.1)',border:'1px solid rgba(34,197,94,0.3)',borderRadius:'var(--radius)',color:'var(--green)',fontSize:13,fontWeight:600}}>Vendor registered successfully!</div>}
-            {error&&<div style={{margin:'0 28px 14px',padding:'12px 16px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'var(--radius)'}}><div style={{color:'var(--red)',fontSize:13,fontWeight:600}}>{error.message||'An error occurred.'}</div>{error.hint&&<div style={{fontSize:11,color:'var(--red)',opacity:0.7,marginTop:4}}>{error.hint}</div>}</div>}
+            {success&&<div style={{margin:'0 28px 14px',padding:'12px 16px',background:'rgba(34,197,94,0.1)',border:'1px solid rgba(34,197,94,0.3)',borderRadius:'var(--radius)',color:'#15803d',fontSize:13,fontWeight:600}}>Vendor registered successfully!</div>}
+            {error&&<div style={{margin:'0 28px 14px',padding:'12px 16px',background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'var(--radius)'}}><div style={{color:'#dc2626',fontSize:13,fontWeight:600}}>{error.message||'An error occurred.'}</div>{error.hint&&<div style={{fontSize:11,color:'#dc2626',opacity:0.7,marginTop:4}}>{error.hint}</div>}</div>}
             <div style={{padding:'16px 28px',borderTop:'1px solid var(--border)',display:'flex',justifyContent:'flex-end',gap:10}}>
               <button className="btn-ghost" onClick={handleClose}>Cancel</button>
               <button className="btn-primary" onClick={handleAdd} disabled={saving||success||!form.name.trim()||!form.email.trim()}>{saving?'Saving...':'Register Vendor'}</button>
@@ -153,9 +155,21 @@ export function Vendors() {
 
       <div className="card">
         {loading ? <div style={{padding:52,textAlign:'center',color:'var(--text3)',fontSize:13}}>Loading...</div> : (
-          <table style={{width:'100%',borderCollapse:'collapse'}}>
+          /* Horizontal-scroll safety wrapper — table never clips off-screen */
+          <div style={{overflowX:'auto'}}>
+          <table style={{width:'100%',borderCollapse:'collapse',tableLayout:'fixed',minWidth:880}}>
+            <colgroup>
+              <col style={{width:'22%'}} />
+              <col style={{width:'11%'}} />
+              <col style={{width:'9%'}} />
+              <col style={{width:'11%'}} />
+              <col style={{width:'13%'}} />
+              <col style={{width:'9%'}} />
+              <col style={{width:'11%'}} />
+              <col style={{width:'14%'}} />
+            </colgroup>
             <thead>
-              <tr style={{borderBottom:'1px solid var(--border)',background:'var(--surface2)'}}>
+              <tr>
                 {['Vendor','Code','Category','Contact','GSTIN','Status','Documents',''].map(h=><th key={h} style={TH}>{h}</th>)}
               </tr>
             </thead>
@@ -164,22 +178,25 @@ export function Vendors() {
                 const ag=agreementMap[v.id]||{}
                 return (
                   <tr key={v.id} className="table-row-hover" style={{borderBottom:i<filtered.length-1?'1px solid var(--border)':'none',cursor:'pointer'}} onClick={()=>navigate(`/vendors/${v.id}`)}>
-                    <td style={{padding:'13px 16px'}}><div style={{fontWeight:600,fontSize:13}}>{v.name}</div><div style={{fontSize:12,color:'var(--text3)',marginTop:2}}>{v.email}</div></td>
-                    <td style={{padding:'13px 16px'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{v.vendor_code||'—'}</span></td>
-                    <td style={{padding:'13px 16px'}}><span style={{fontSize:11,fontWeight:700,borderRadius:99,padding:'4px 10px',background:v.category==='SERVICE'?'var(--primary-light)':'rgba(132,204,22,0.15)',color:v.category==='SERVICE'?'var(--primary)':'#4d7c0f'}}>{v.category||'—'}</span></td>
-                    <td style={{padding:'13px 16px',fontSize:13,color:'var(--text2)'}}>{v.contact_person||'—'}</td>
-                    <td style={{padding:'13px 16px'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{v.gstin||'—'}</span></td>
-                    <td style={{padding:'13px 16px'}}><StatusBadge status={v.status} type="vendor" /></td>
-                    <td style={{padding:'13px 16px'}}>
+                    <td style={{padding:'10px 12px'}}>
+                      <div className="clamp-2" style={{fontWeight:600,fontSize:13}} title={v.name}>{v.name}</div>
+                      <div style={{fontSize:12,color:'var(--text3)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={v.email}>{v.email}</div>
+                    </td>
+                    <td style={{padding:'10px 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{v.vendor_code||'—'}</span></td>
+                    <td style={{padding:'10px 12px'}}><span style={{fontSize:11,fontWeight:700,borderRadius:99,padding:'4px 10px',background:v.category==='SERVICE'?'var(--primary-light)':v.category==='PRODUCT'?'var(--lime-light)':'var(--surface3)',color:v.category==='SERVICE'?'var(--primary)':v.category==='PRODUCT'?'#4d7c0f':'var(--text3)'}}>{v.category||'—'}</span></td>
+                    <td style={{padding:'10px 12px',fontSize:13,color:'var(--text2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{v.contact_person||'—'}</td>
+                    <td style={{padding:'10px 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{v.gstin||'—'}</span></td>
+                    <td style={{padding:'10px 12px'}}><StatusBadge status={v.status} type="vendor" /></td>
+                    <td style={{padding:'10px 12px'}}>
                       <div style={{display:'flex',flexDirection:'column',gap:4}}>
                         {ag.url  ? <PdfLink url={ag.url}  label="Agreement" /> : <span style={{fontSize:11,color:'var(--text3)'}}>No agreement</span>}
                         {ag.url2 && <PdfLink url={ag.url2} label="Addendum" />}
                       </div>
                     </td>
-                    <td style={{padding:'13px 16px'}}>
-                      <div style={{display:'flex',gap:6}}>
-                        <button onClick={e=>{e.stopPropagation();navigate(`/vendors/${v.id}`)}} className="btn-ghost" style={{padding:'5px 12px',fontSize:12}}>View &rarr;</button>
-                        <button onClick={e=>{e.stopPropagation();navigate(`/vendors/${v.id}/ledger`)}} className="btn-ghost" style={{padding:'5px 12px',fontSize:12,color:'var(--primary)',fontWeight:700}}>Ledger</button>
+                    <td style={{padding:'10px 12px'}}>
+                      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                        <button onClick={e=>{e.stopPropagation();navigate(`/vendors/${v.id}`)}} className="btn-ghost" style={{padding:'5px 10px',fontSize:12}}>View &rarr;</button>
+                        <button onClick={e=>{e.stopPropagation();navigate(`/vendors/${v.id}/ledger`)}} className="btn-ghost" style={{padding:'5px 10px',fontSize:12,color:'var(--primary)',fontWeight:700}}>Ledger</button>
                       </div>
                     </td>
                   </tr>
@@ -188,6 +205,7 @@ export function Vendors() {
               {filtered.length===0&&<tr><td colSpan={8} style={{padding:52,textAlign:'center',color:'var(--text3)',fontSize:13}}>No vendors found</td></tr>}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
