@@ -45,6 +45,9 @@ export function Vendors() {
   const [saving,setSaving]             = useState(false)
   const [error,setError]               = useState(null)
   const [success,setSuccess]           = useState(false)
+  const [expanded,setExpanded]         = useState({})
+
+  const isDemoEmail = email => !email || email.trim().toLowerCase().startsWith('vendor')
 
   useEffect(()=>{ load() },[])
 
@@ -52,7 +55,7 @@ export function Vendors() {
     setLoading(true); setLoadError('')
     try {
       const [{data:vData,error:vErr},{data:agData}] = await Promise.all([
-        supabase.from('vendors').select('id,name,email,phone,contact_person,gstin,pan,status,vendor_code,category,created_at').order('created_at',{ascending:false}),
+        supabase.from('vendors').select('id,name,email,phone,contact_person,gstin,pan,status,vendor_code,category,parent_vendor_id,created_at').order('name',{ascending:true}),
         supabase.from('agreements').select('vendor_id,agreement_url,agreement_url2').not('vendor_id','is',null),
       ])
       if (vErr) throw vErr
@@ -82,11 +85,32 @@ export function Vendors() {
 
   function handleClose(){setShowForm(false);setForm(EMPTY_FORM);setError(null);setSuccess(false)}
 
-  const filtered=vendors.filter(v=>{
-    const matchStatus=statusFilter==='ALL'||v.status===statusFilter
-    const matchCategory=categoryFilter==='ALL'||v.category===categoryFilter
-    const q=search.toLowerCase()
-    return matchStatus&&matchCategory&&(!q||v.name.toLowerCase().includes(q)||(v.email||'').toLowerCase().includes(q)||(v.vendor_code||'').toLowerCase().includes(q))
+  // Build children map: parent_id → [children]
+  const childrenMap = {}
+  for (const v of vendors) {
+    if (v.parent_vendor_id) {
+      if (!childrenMap[v.parent_vendor_id]) childrenMap[v.parent_vendor_id] = []
+      childrenMap[v.parent_vendor_id].push(v)
+    }
+  }
+  // Only show top-level vendors in main list
+  const topLevel = vendors.filter(v => !v.parent_vendor_id)
+
+  const filtered = topLevel.filter(v => {
+    const matchStatus   = statusFilter==='ALL' || v.status===statusFilter
+    const matchCategory = categoryFilter==='ALL' || v.category===categoryFilter
+    const q = search.toLowerCase()
+    const children = childrenMap[v.id] || []
+    const matchChildren = children.some(c =>
+      c.name.toLowerCase().includes(q) ||
+      (c.category||'').toLowerCase().includes(q)
+    )
+    return matchStatus && matchCategory && (!q ||
+      v.name.toLowerCase().includes(q) ||
+      (v.email||'').toLowerCase().includes(q) ||
+      (v.vendor_code||'').toLowerCase().includes(q) ||
+      matchChildren
+    )
   })
 
   return (
@@ -95,7 +119,7 @@ export function Vendors() {
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:28,gap:16,flexWrap:'wrap'}}>
         <div>
           <h1 style={{fontSize:26,fontWeight:800,letterSpacing:'-0.03em',color:'var(--text)'}}>Vendors</h1>
-          <div style={{color:'var(--text3)',fontSize:13,marginTop:4}}>{vendors.length} registered</div>
+          <div style={{color:'var(--text3)',fontSize:13,marginTop:4}}>{topLevel.length} vendors · {vendors.length} entities</div>
         </div>
         {role==='admin'&&<button className="btn-primary" onClick={()=>setShowForm(true)} style={{display:'flex',alignItems:'center',gap:6}}><Icon name="plus" size={14} color="#fff" /> Add Vendor</button>}
       </div>
@@ -175,32 +199,88 @@ export function Vendors() {
             </thead>
             <tbody>
               {filtered.map((v,i)=>{
-                const ag=agreementMap[v.id]||{}
-                return (
-                  <tr key={v.id} className="table-row-hover" style={{borderBottom:i<filtered.length-1?'1px solid var(--border)':'none',cursor:'pointer'}} onClick={()=>navigate(`/vendors/${v.id}`)}>
+                const ag       = agreementMap[v.id]||{}
+                const children = childrenMap[v.id]||[]
+                const hasKids  = children.length > 0
+                const isOpen   = expanded[v.id]
+                const showEmail = !isDemoEmail(v.email)
+                const rows = []
+
+                // ── Parent row ──
+                rows.push(
+                  <tr key={v.id} className="table-row-hover" style={{borderBottom:'1px solid var(--border)',cursor:'pointer',background:'var(--surface)'}} onClick={()=>navigate(`/vendors/${v.id}`)}>
                     <td style={{padding:'10px 12px'}}>
-                      <div className="clamp-2" style={{fontWeight:600,fontSize:13}} title={v.name}>{v.name}</div>
-                      <div style={{fontSize:12,color:'var(--text3)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={v.email}>{v.email}</div>
+                      <div style={{display:'flex',alignItems:'center',gap:6}}>
+                        {hasKids && (
+                          <button onClick={e=>{e.stopPropagation();setExpanded(p=>({...p,[v.id]:!p[v.id]}))}}
+                            style={{background:'none',border:'none',cursor:'pointer',padding:'2px 4px',color:'var(--text3)',fontSize:13,lineHeight:1,flexShrink:0}}>
+                            {isOpen ? '▾' : '▸'}
+                          </button>
+                        )}
+                        <div style={{minWidth:0}}>
+                          <div style={{display:'flex',alignItems:'center',gap:6}}>
+                            <span className="clamp-2" style={{fontWeight:600,fontSize:13}}>{v.name}</span>
+                            {hasKids && <span style={{fontSize:10,fontWeight:700,background:'var(--primary-light)',color:'var(--primary)',borderRadius:99,padding:'2px 7px',flexShrink:0}}>{children.length+1} entities</span>}
+                          </div>
+                          {showEmail && <div style={{fontSize:12,color:'var(--text3)',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{v.email}</div>}
+                        </div>
+                      </div>
                     </td>
-                    <td style={{padding:'10px 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{v.vendor_code||'—'}</span></td>
-                    <td style={{padding:'10px 12px'}}><span style={{fontSize:11,fontWeight:700,borderRadius:99,padding:'4px 10px',background:v.category==='SERVICE'?'var(--primary-light)':v.category==='PRODUCT'?'var(--lime-light)':'var(--surface3)',color:v.category==='SERVICE'?'var(--primary)':v.category==='PRODUCT'?'#4d7c0f':'var(--text3)'}}>{v.category||'—'}</span></td>
-                    <td style={{padding:'10px 12px',fontSize:13,color:'var(--text2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{v.contact_person||'—'}</td>
-                    <td style={{padding:'10px 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{v.gstin||'—'}</span></td>
+                    <td style={{padding:'10px 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{v.vendor_code||''}</span></td>
+                    <td style={{padding:'10px 12px'}}>{v.category&&<span style={{fontSize:11,fontWeight:700,borderRadius:99,padding:'4px 10px',background:v.category==='SERVICE'?'var(--primary-light)':v.category==='PRODUCT'?'var(--lime-light)':'var(--surface3)',color:v.category==='SERVICE'?'var(--primary)':v.category==='PRODUCT'?'#4d7c0f':'var(--text3)'}}>{v.category}</span>}</td>
+                    <td style={{padding:'10px 12px',fontSize:13,color:'var(--text2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{v.contact_person||''}</td>
+                    <td style={{padding:'10px 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{v.gstin||''}</span></td>
                     <td style={{padding:'10px 12px'}}><StatusBadge status={v.status} type="vendor" /></td>
                     <td style={{padding:'10px 12px'}}>
                       <div style={{display:'flex',flexDirection:'column',gap:4}}>
-                        {ag.url  ? <PdfLink url={ag.url}  label="Agreement" /> : <span style={{fontSize:11,color:'var(--text3)'}}>No agreement</span>}
-                        {ag.url2 && <PdfLink url={ag.url2} label="Addendum" />}
+                        {ag.url ? <PdfLink url={ag.url} label="Agreement"/> : <span style={{fontSize:11,color:'var(--text3)'}}>No agreement</span>}
+                        {ag.url2 && <PdfLink url={ag.url2} label="Addendum"/>}
                       </div>
                     </td>
                     <td style={{padding:'10px 12px'}}>
                       <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                        <button onClick={e=>{e.stopPropagation();navigate(`/vendors/${v.id}`)}} className="btn-ghost" style={{padding:'5px 10px',fontSize:12}}>View &rarr;</button>
+                        <button onClick={e=>{e.stopPropagation();navigate(`/vendors/${v.id}`)}} className="btn-ghost" style={{padding:'5px 10px',fontSize:12}}>View →</button>
                         <button onClick={e=>{e.stopPropagation();navigate(`/vendors/${v.id}/ledger`)}} className="btn-ghost" style={{padding:'5px 10px',fontSize:12,color:'var(--primary)',fontWeight:700}}>Ledger</button>
                       </div>
                     </td>
                   </tr>
                 )
+
+                // ── Child rows (expanded) ──
+                if (hasKids && isOpen) {
+                  children.forEach(c => {
+                    const cag = agreementMap[c.id]||{}
+                    rows.push(
+                      <tr key={c.id} className="table-row-hover" style={{borderBottom:'1px solid var(--border)',cursor:'pointer',background:'var(--surface2)'}} onClick={()=>navigate(`/vendors/${c.id}`)}>
+                        <td style={{padding:'9px 12px 9px 36px'}}>
+                          <div style={{display:'flex',alignItems:'center',gap:6}}>
+                            <span style={{color:'var(--text3)',fontSize:12,flexShrink:0}}>↳</span>
+                            <div style={{minWidth:0}}>
+                              <div style={{fontSize:12,fontWeight:500,color:'var(--text2)'}}>{c.name}</div>
+                              {c.category && <span style={{fontSize:10,fontWeight:600,color:'var(--primary)',background:'var(--primary-light)',borderRadius:4,padding:'1px 6px'}}>{c.category}</span>}
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{padding:'9px 12px'}}><span className="mono" style={{fontSize:11,color:'var(--text3)'}}>{c.vendor_code||''}</span></td>
+                        <td style={{padding:'9px 12px'}}></td>
+                        <td style={{padding:'9px 12px',fontSize:12,color:'var(--text3)'}}>{c.contact_person||''}</td>
+                        <td style={{padding:'9px 12px'}}><span className="mono" style={{fontSize:11,color:'var(--text3)'}}>{c.gstin||''}</span></td>
+                        <td style={{padding:'9px 12px'}}><StatusBadge status={c.status} type="vendor"/></td>
+                        <td style={{padding:'9px 12px'}}>
+                          {cag.url ? <PdfLink url={cag.url} label="Agreement"/> : <span style={{fontSize:11,color:'var(--text3)'}}>No agreement</span>}
+                          {cag.url2 && <PdfLink url={cag.url2} label="Addendum"/>}
+                        </td>
+                        <td style={{padding:'9px 12px'}}>
+                          <div style={{display:'flex',gap:6}}>
+                            <button onClick={e=>{e.stopPropagation();navigate(`/vendors/${c.id}`)}} className="btn-ghost" style={{padding:'4px 8px',fontSize:11}}>View →</button>
+                            <button onClick={e=>{e.stopPropagation();navigate(`/vendors/${c.id}/ledger`)}} className="btn-ghost" style={{padding:'4px 8px',fontSize:11,color:'var(--primary)',fontWeight:700}}>Ledger</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                }
+                return rows
               })}
               {filtered.length===0&&<tr><td colSpan={8} style={{padding:52,textAlign:'center',color:'var(--text3)',fontSize:13}}>No vendors found</td></tr>}
             </tbody>
