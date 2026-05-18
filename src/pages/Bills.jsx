@@ -59,7 +59,7 @@ export function Bills() {
   useEffect(()=>{
     async function load(){
       setLoading(true)
-      const {data}=await supabase.from('bills').select('id,invoice_number,amount,status,billing_period_start,billing_period_end,due_date,frequency,category,anomaly_flags,created_at,vendor_id,order_type,vendors(name)').order('created_at',{ascending:false})
+      const {data}=await supabase.from('bills').select('id,invoice_number,amount,status,billing_period_start,billing_period_end,due_date,paid_at,frequency,category,anomaly_flags,created_at,vendor_id,order_type,vendors(name)').order('created_at',{ascending:false})
       setBills(data||[]);setLoading(false)
     }
     load()
@@ -148,10 +148,24 @@ export function Bills() {
                   <td style={{padding:'10px 12px',fontSize:12,color:'var(--text3)'}}>{fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency)}</td>
                   <td style={{padding:'10px 12px'}}><span style={{fontSize:11,background:'var(--surface3)',color:'var(--text2)',borderRadius:6,padding:'3px 8px',border:'1px solid var(--border2)'}}>{FREQ_LABELS[b.frequency]||b.frequency||'â€”'}</span></td>
                   <td style={{padding:'10px 12px'}}><span style={{fontSize:11,background:'var(--primary-light)',color:'var(--primary)',borderRadius:6,padding:'3px 8px',fontWeight:600}}>{CAT_LABELS[b.category]||b.category||'â€”'}</span></td>
-                  {/* Due date â€” DD-MM-YY (e.g. 01-05-26) */}
+                  {/* Due date + paid date */}
                   <td style={{padding:'10px 12px'}}>
-                    <div className="mono" style={{fontSize:12,color:dueDateColor(b.due_date),fontWeight:b.due_date&&daysUntil(b.due_date)<=7?700:500}}>{fmtDateDDMMYY(b.due_date)}</div>
-                    {b.due_date&&daysUntil(b.due_date)<0&&<div style={{fontSize:10,color:'#dc2626',fontWeight:700,letterSpacing:'0.04em',marginTop:2}}>OVERDUE</div>}
+                    {b.due_date
+                      ? <div className=”mono” style={{fontSize:12,fontWeight:600,
+                          color: b.status==='PAID' ? '#d97706'
+                               : daysUntil(b.due_date)<0 ? '#dc2626'
+                               : daysUntil(b.due_date)<=7 ? '#c2410c'
+                               : 'var(--text2)'}}>
+                          {fmtDateDDMMYY(b.due_date)}
+                          {b.status!=='PAID'&&daysUntil(b.due_date)<0&&
+                            <span style={{fontSize:9,fontWeight:700,background:'#dc2626',color:'#fff',borderRadius:4,padding:'1px 5px',marginLeft:5,letterSpacing:'0.04em'}}>OVERDUE</span>}
+                        </div>
+                      : <span style={{fontSize:12,color:'var(--text3)'}}>—</span>}
+                    {b.status==='PAID'&&b.paid_at&&(
+                      <div className=”mono” style={{fontSize:11,color:'#16a34a',fontWeight:600,marginTop:3,display:'flex',alignItems:'center',gap:3}}>
+                        <span>✓</span>{fmtDateDDMMYY(b.paid_at)}
+                      </div>
+                    )}
                   </td>
                   <td style={{padding:'10px 12px'}}><StatusBadge status={b.status} /></td>
                   <td style={{padding:'10px 12px'}}>
