@@ -10,6 +10,7 @@ const FIELDS = [
   ['name', 'Name'], ['email', 'Email'], ['phone', 'Phone'], ['contact_person', 'Contact Person'],
   ['gstin', 'GSTIN'], ['pan', 'PAN'], ['vendor_code', 'Vendor Code'],
 ]
+const TEXTAREA_FIELDS = new Set(['service_description'])
 const BANK_FIELDS = [
   ['bank_name', 'Bank Name'], ['bank_account_no', 'Account No.'], ['bank_ifsc', 'IFSC Code'], ['bank_account_name', 'Account Holder'],
 ]
@@ -117,6 +118,40 @@ export function VendorDetail() {
                     : <StatusBadge status={vendor.status} type="vendor" />
                   }
                 </div>
+              </div>
+
+              {/* Payment Terms */}
+              <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, marginBottom: 6, letterSpacing: '0.02em' }}>Payment Terms</div>
+                    {editing
+                      ? <select value={form.payment_terms || ''} onChange={e => {
+                          const val = e.target.value
+                          const daysMap = { 'Advance': 0, '7 days': 7, '15 days': 15, '30 days': 30, '45 days': 45, '60 days': 60 }
+                          setForm(p => ({ ...p, payment_terms: val, payment_terms_days: daysMap[val] ?? null }))
+                        }} className="input-base" style={{ fontSize: 13 }}>
+                          <option value="">— Not set —</option>
+                          {['Advance','7 days','15 days','30 days','45 days','60 days'].map(t => <option key={t}>{t}</option>)}
+                        </select>
+                      : <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: vendor.payment_terms === 'Advance' ? 'var(--red)' : 'var(--green)', background: vendor.payment_terms === 'Advance' ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', padding: '3px 10px', borderRadius: 99 }}>
+                            {vendor.payment_terms || '—'}
+                          </span>
+                          {vendor.payment_terms_days > 0 && <span style={{ fontSize: 11, color: 'var(--text3)' }}>Due {vendor.payment_terms_days} days after invoice</span>}
+                          {vendor.payment_terms === 'Advance' && <span style={{ fontSize: 11, color: 'var(--text3)' }}>Pay before invoice receipt</span>}
+                        </div>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, marginBottom: 6, letterSpacing: '0.02em' }}>Service Description</div>
+                {editing
+                  ? <textarea value={form.service_description || ''} onChange={e => setForm(p => ({ ...p, service_description: e.target.value }))} className="input-base" rows={3} style={{ fontSize: 13, width: '100%', resize: 'vertical' }} placeholder="Describe the services or products this vendor provides…" />
+                  : <div style={{ fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{vendor.service_description || '—'}</div>
+                }
               </div>
 
               <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>

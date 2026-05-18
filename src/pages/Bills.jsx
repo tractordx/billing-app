@@ -56,19 +56,25 @@ export function Bills() {
   const [cnError,setCnError]=useState('')
   const [cnSuccess,setCnSuccess]=useState(false)
 
+  const [serviceFilter,setServiceFilter]=useState('ALL')
+
   useEffect(()=>{
     async function load(){
       setLoading(true)
-      const {data}=await supabase.from('bills').select('id,invoice_number,amount,status,billing_period_start,billing_period_end,due_date,frequency,category,anomaly_flags,created_at,vendor_id,order_type,vendors(name)').order('created_at',{ascending:false})
+      const {data}=await supabase.from('bills').select('id,invoice_number,amount,status,billing_period_start,billing_period_end,due_date,paid_at,frequency,category,anomaly_flags,created_at,vendor_id,order_type,vendors(name,nature_of_service,category)').order('created_at',{ascending:false})
       setBills(data||[]);setLoading(false)
     }
     load()
   },[])
 
+  // Unique nature_of_service values from loaded bills
+  const serviceTypes=['ALL',...new Set(bills.map(b=>b.vendors?.nature_of_service).filter(Boolean))].sort((a,b)=>a==='ALL'?-1:a.localeCompare(b))
+
   const filtered=bills.filter(b=>{
     const matchStatus=activeTab==='ALL'?true:activeTab==='REJECTED'?(b.status==='REJECTED_L1'||b.status==='REJECTED_L2'):b.status===activeTab
+    const matchService=serviceFilter==='ALL'||(b.vendors?.nature_of_service||'—')===serviceFilter
     const q=search.toLowerCase()
-    return matchStatus&&(!q||(b.vendors?.name||'').toLowerCase().includes(q)||(b.invoice_number||'').toLowerCase().includes(q))
+    return matchStatus&&matchService&&(!q||(b.vendors?.name||'').toLowerCase().includes(q)||(b.invoice_number||'').toLowerCase().includes(q))
   })
   const setTab=key=>{if(key==='ALL')searchParams.delete('status');else searchParams.set('status',key);setSearchParams(searchParams)}
 
@@ -99,7 +105,7 @@ export function Bills() {
         </button>
       </div>
 
-      <div style={{display:'flex',gap:10,marginBottom:18,flexWrap:'wrap',alignItems:'center'}}>
+      <div style={{display:'flex',gap:10,marginBottom:10,flexWrap:'wrap',alignItems:'center'}}>
         <div style={{display:'flex',alignItems:'center',gap:8,background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:'var(--radius)',padding:'8px 14px',flex:1,minWidth:200,maxWidth:300}}>
           <Icon name="search" size={14} color="var(--text3)" />
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search vendor or invoice..." style={{border:'none',outline:'none',background:'transparent',flex:1,color:'var(--text)',fontSize:13}} />
@@ -111,6 +117,17 @@ export function Bills() {
           })}
         </div>
       </div>
+      <div style={{display:'flex',gap:6,marginBottom:18,flexWrap:'wrap',alignItems:'center'}}>
+        <span style={{fontSize:11,fontWeight:600,color:'var(--text3)',marginRight:2}}>Service:</span>
+        {serviceTypes.map(s=>(
+          <button key={s} onClick={()=>setServiceFilter(s)} style={{padding:'4px 12px',borderRadius:99,border:'1px solid',fontSize:11,fontWeight:600,cursor:'pointer',transition:'all 0.15s',
+            background:serviceFilter===s?'var(--primary)':'transparent',
+            borderColor:serviceFilter===s?'var(--primary)':'var(--border2)',
+            color:serviceFilter===s?'#fff':'var(--text3)'}}>
+            {s==='ALL'?'All':s}
+          </button>
+        ))}
+      </div>
 
       <div className="card">
         {loading ? (
@@ -119,7 +136,7 @@ export function Bills() {
           <table style={{width:'100%',borderCollapse:'collapse'}}>
             <thead>
               <tr style={{borderBottom:'1px solid var(--border)',background:'var(--surface2)'}}>
-                {['Vendor','Invoice','Amount','Period','Freq','Category','Due Date','Status',''].map(h=><th key={h} style={TH}>{h}</th>)}
+                {['Vendor','Invoice','Amount','Period','Freq','Service Type','Category','Due Date','Status',''].map(h=><th key={h} style={TH}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -130,10 +147,29 @@ export function Bills() {
                   <td style={{padding:'13px 16px'}}><span className="mono" style={{fontWeight:600,fontSize:13,color:'var(--text)'}}>{fmt(b.amount)}</span></td>
                   <td style={{padding:'13px 16px',fontSize:12,color:'var(--text3)'}}>{fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency)}</td>
                   <td style={{padding:'13px 16px'}}><span style={{fontSize:11,background:'var(--surface3)',color:'var(--text2)',borderRadius:6,padding:'3px 8px',border:'1px solid var(--border2)'}}>{FREQ_LABELS[b.frequency]||b.frequency||'—'}</span></td>
-                  <td style={{padding:'13px 16px'}}><span style={{fontSize:11,background:'var(--primary-light)',color:'var(--primary)',borderRadius:6,padding:'3px 8px',fontWeight:600}}>{CAT_LABELS[b.category]||b.category||'—'}</span></td>
+                  <td style={{padding:'13px 16px'}}><span style={{fontSize:11,background:'var(--surface3)',color:'var(--text2)',borderRadius:6,padding:'3px 8px',fontWeight:600,border:'1px solid var(--border2)'}}>{b.vendors?.nature_of_service||'—'}</span></td>
+                  <td style={{padding:'13px 16px'}}><span style={{fontSize:11,fontWeight:700,borderRadius:99,padding:'3px 10px',background:b.vendors?.category==='SERVICE'?'var(--primary-light)':'rgba(132,204,22,0.15)',color:b.vendors?.category==='SERVICE'?'var(--primary)':'#4d7c0f'}}>{b.vendors?.category||'—'}</span></td>
                   <td style={{padding:'13px 16px'}}>
-                    <div style={{fontSize:12,color:dueDateColor(b.due_date),fontWeight:daysUntil(b.due_date)<=7?700:400}}>{fmtDate(b.due_date)}</div>
-                    {b.due_date&&daysUntil(b.due_date)<0&&<div style={{fontSize:10,color:'var(--red)',fontWeight:600}}>OVERDUE</div>}
+                    {b.due_date && (
+                      <div style={{
+                        fontSize:12,
+                        fontWeight:600,
+                        color: b.status==='PAID' ? '#d97706'
+                             : daysUntil(b.due_date)<0 ? 'var(--red)'
+                             : daysUntil(b.due_date)<=7 ? '#c2410c'
+                             : 'var(--text2)',
+                        display:'flex',alignItems:'center',gap:4
+                      }}>
+                        {fmtDate(b.due_date)}
+                        {b.status!=='PAID'&&daysUntil(b.due_date)<0&&<span style={{fontSize:9,fontWeight:700,background:'var(--red)',color:'#fff',borderRadius:4,padding:'1px 5px',letterSpacing:'0.04em'}}>OVERDUE</span>}
+                      </div>
+                    )}
+                    {b.status==='PAID'&&b.paid_at&&(
+                      <div style={{fontSize:11,color:'var(--green,#16a34a)',fontWeight:600,marginTop:3,display:'flex',alignItems:'center',gap:4}}>
+                        <span style={{fontSize:9}}>✓</span>{fmtDate(b.paid_at)}
+                      </div>
+                    )}
+                    {!b.due_date&&<span style={{fontSize:12,color:'var(--text3)'}}>—</span>}
                   </td>
                   <td style={{padding:'13px 16px'}}><StatusBadge status={b.status} /></td>
                   <td style={{padding:'13px 16px'}}>
