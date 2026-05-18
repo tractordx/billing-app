@@ -20,7 +20,7 @@ const LBL = { display:'block', fontSize:12, fontWeight:600, color:'var(--text3)'
 const EMPTY_CN = { amount:'', reason:'', date:new Date().toISOString().slice(0,10), cn_number:'' }
 
 function fmtBillingPeriod(start, end, frequency) {
-  if (!start) return 'â€”'
+  if (!start) return 'â€"'
   if (frequency === 'QUARTERLY') { const m=new Date(start).getMonth(),y=new Date(start).getFullYear(); return `Q${Math.floor(m/3)+1} ${y}` }
   if (frequency === 'ANNUAL') return new Date(start).getFullYear().toString()
   return new Date(start).toLocaleDateString('en-IN',{month:'short',year:'numeric'})
@@ -35,7 +35,7 @@ function dueDateColor(d) {
 }
 function generateCSV(bills) {
   const headers=['Vendor','Invoice','Amount','Period','Frequency','Category','Due Date','Status','Created']
-  const rows=bills.map(b=>[b.vendors?.name||'â€”',b.invoice_number||'â€”',fmt(b.amount),fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency),FREQ_LABELS[b.frequency]||b.frequency||'â€”',CAT_LABELS[b.category]||b.category||'â€”',fmtDateDDMMYY(b.due_date),b.status,fmtDate(b.created_at)])
+  const rows=bills.map(b=>[b.vendors?.name||'â€"',b.invoice_number||'â€"',fmt(b.amount),fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency),FREQ_LABELS[b.frequency]||b.frequency||'â€"',CAT_LABELS[b.category]||b.category||'â€"',fmtDateDDMMYY(b.due_date),b.status,fmtDate(b.created_at)])
   const csv=[headers,...rows].map(r=>r.map(v=>`"${v}"`).join(',')).join('\n')
   const blob=new Blob([csv],{type:'text/csv'})
   const url=URL.createObjectURL(blob)
@@ -88,7 +88,7 @@ export function Bills() {
   }
 
   return (
-    /* Full-width container â€” no maxWidth clamp; sits flush beside sidebar */
+    /* Full-width container â€" no maxWidth clamp; sits flush beside sidebar */
     <div style={{padding:'24px 24px',width:'100%'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:28,gap:16,flexWrap:'wrap'}}>
         <div>
@@ -117,7 +117,7 @@ export function Bills() {
         {loading ? (
           <div style={{padding:52,textAlign:'center',color:'var(--text3)',fontSize:13}}>Loading...</div>
         ) : (
-          /* Horizontal-scroll safety wrapper â€” table never clips off-screen */
+          /* Horizontal-scroll safety wrapper â€" table never clips off-screen */
           <div style={{overflowX:'auto'}}>
           <table style={{width:'100%',borderCollapse:'collapse',tableLayout:'fixed',minWidth:1150}}>
             <colgroup>
@@ -141,17 +141,17 @@ export function Bills() {
                 <tr key={b.id} className="table-row-hover" style={{borderBottom:i<filtered.length-1?'1px solid var(--border)':'none',cursor:'pointer'}} onClick={()=>navigate(`/bills/${b.id}`)}>
                   {/* Vendor: clamp to 2 lines, neat truncate */}
                   <td style={{padding:'10px 12px'}}>
-                    <div className="clamp-2" style={{fontWeight:700,fontSize:14,lineHeight:1.35}} title={b.vendors?.name||''}>{b.vendors?.name||'â€”'}</div>
+                    <div className="clamp-2" style={{fontWeight:700,fontSize:14,lineHeight:1.35}} title={b.vendors?.name||''}>{b.vendors?.name||'â€"'}</div>
                   </td>
-                  <td style={{padding:'10px 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{b.invoice_number||'â€”'}</span></td>
+                  <td style={{padding:'10px 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{b.invoice_number||'â€"'}</span></td>
                   <td style={{padding:'10px 12px'}}><span className="mono" style={{fontWeight:600,fontSize:13,color:'var(--text)'}}>{fmt(b.amount)}</span></td>
                   <td style={{padding:'10px 12px',fontSize:12,color:'var(--text3)'}}>{fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency)}</td>
-                  <td style={{padding:'10px 12px'}}><span style={{fontSize:11,background:'var(--surface3)',color:'var(--text2)',borderRadius:6,padding:'3px 8px',border:'1px solid var(--border2)'}}>{FREQ_LABELS[b.frequency]||b.frequency||'â€”'}</span></td>
-                  <td style={{padding:'10px 12px'}}><span style={{fontSize:11,background:'var(--primary-light)',color:'var(--primary)',borderRadius:6,padding:'3px 8px',fontWeight:600}}>{CAT_LABELS[b.category]||b.category||'â€”'}</span></td>
+                  <td style={{padding:'10px 12px'}}><span style={{fontSize:11,background:'var(--surface3)',color:'var(--text2)',borderRadius:6,padding:'3px 8px',border:'1px solid var(--border2)'}}>{FREQ_LABELS[b.frequency]||b.frequency||'â€"'}</span></td>
+                  <td style={{padding:'10px 12px'}}><span style={{fontSize:11,background:'var(--primary-light)',color:'var(--primary)',borderRadius:6,padding:'3px 8px',fontWeight:600}}>{CAT_LABELS[b.category]||b.category||'â€"'}</span></td>
                   {/* Due date + paid date */}
                   <td style={{padding:'10px 12px'}}>
                     {b.due_date
-                      ? <div className=”mono” style={{fontSize:12,fontWeight:600,
+                      ? <div className="mono" style={{fontSize:12,fontWeight:600,
                           color: b.status==='PAID' ? '#d97706'
                                : daysUntil(b.due_date)<0 ? '#dc2626'
                                : daysUntil(b.due_date)<=7 ? '#c2410c'
@@ -162,7 +162,7 @@ export function Bills() {
                         </div>
                       : <span style={{fontSize:12,color:'var(--text3)'}}>—</span>}
                     {b.status==='PAID'&&b.paid_at&&(
-                      <div className=”mono” style={{fontSize:11,color:'#16a34a',fontWeight:600,marginTop:3,display:'flex',alignItems:'center',gap:3}}>
+                      <div className="mono" style={{fontSize:11,color:'#16a34a',fontWeight:600,marginTop:3,display:'flex',alignItems:'center',gap:3}}>
                         <span>✓</span>{fmtDateDDMMYY(b.paid_at)}
                       </div>
                     )}
