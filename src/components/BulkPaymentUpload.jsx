@@ -5,8 +5,7 @@ import { fmt, fmtDate } from '../lib/utils'
 import { Icon } from './Icon'
 
 // ─── Template ───────────────────────────────────────────────────────────────
-const TEMPLATE_HEADERS = 'Vendor Code,Vendor Name,Invoice No,UTR,Payment Date (DD/MM/YYYY),Payment Mode (NEFT/RTGS/UPI/CHEQUE/IMPS)'
-const TEMPLATE_SAMPLE  = 'MRG-001,ABC Supplies Pvt Ltd,INV-2024-089,UTR123456789012,15/05/2026,NEFT'
+const TEMPLATE_HEADERS = 'Vendor Code,Vendor Name,Invoice No,UTR,Payment Date (DD/MM/YYYY),Payment Approval Date (DD/MM/YYYY),Payment Mode (NEFT/RTGS/UPI/CHEQUE/IMPS)'
 const VALID_MODES      = ['NEFT', 'RTGS', 'UPI', 'CHEQUE', 'IMPS', 'DD', 'CASH']
 
 // ─── CSV Parser ──────────────────────────────────────────────────────────────
@@ -65,18 +64,33 @@ const TH = {
 // ─── Component ───────────────────────────────────────────────────────────────
 export function BulkPaymentUpload({ onSuccess }) {
   const { profile, session } = useAuth()
-  const [open, setOpen]       = useState(false)
-  const [step, setStep]       = useState('upload')   // upload | validating | errors | preview | processing | done
-  const [dragOver, setDragOver] = useState(false)
-  const [fileName, setFileName] = useState('')
-  const [errors, setErrors]   = useState([])          // [{ row, field, message }]
-  const [preview, setPreview] = useState([])          // validated rows
-  const [result, setResult]   = useState(null)        // { inserted, total }
+  const [open, setOpen]           = useState(false)
+  const [step, setStep]           = useState('upload')   // upload | validating | errors | preview | processing | done
+  const [dragOver, setDragOver]   = useState(false)
+  const [fileName, setFileName]   = useState('')
+  const [errors, setErrors]       = useState([])          // [{ row, field, message }]
+  const [preview, setPreview]     = useState([])          // validated rows
+  const [result, setResult]       = useState(null)        // { inserted, total }
+  const [tplLoading, setTplLoading] = useState(false)
   const fileRef = useRef()
 
-  // ── Download template CSV ─────────────────────────────────────────────────
-  function downloadTemplate() {
-    const csv  = [TEMPLATE_HEADERS, TEMPLATE_SAMPLE].join('\n')
+  // ── Download template CSV — pre-filled with all active vendors ───────────
+  async function downloadTemplate() {
+    setTplLoading(true)
+    const { data: vendors } = await supabase
+      .from('vendors')
+      .select('vendor_code,name')
+      .eq('status', 'ACTIVE')
+      .order('name', { ascending: true })
+    setTplLoading(false)
+
+    const rows = (vendors || []).map(v =>
+      `${v.vendor_code},"${v.name}",,,,, `
+    )
+    // If no vendors yet, fall back to a sample row
+    if (rows.length === 0) rows.push('MRG-001,ABC Supplies Pvt Ltd,,,,, ')
+
+    const csv  = [TEMPLATE_HEADERS, ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
@@ -97,11 +111,12 @@ export function BulkPaymentUpload({ onSuccess }) {
     const text              = await file.text()
     const { headers, rows } = parseCSV(text)
 
-    // Header check — must have the three key columns
+    // Header check — must have the four key columns
     const hasVendorCode  = headers.some(h => h.toLowerCase().includes('vendor code'))
     const hasInvoiceNo   = headers.some(h => h.toLowerCase().includes('invoice'))
     const hasUTR         = headers.some(h => h.toLowerCase().includes('utr'))
-    if (!hasVendorCode || !hasInvoiceNo || !hasUTR) {
+    const hasPaymentDate = headers.some(h => h.toLowerCase().includes('payment date'))
+    if (!hasVendorCode || !hasInvoiceNo || !hasUTR || !hasPaymentDate) {
       setErrors([{ row: '—', field: 'File', message: 'Invalid template headers. Download the template and fill it in.' }])
       setStep('errors'); return
     }
@@ -142,22 +157,26 @@ export function BulkPaymentUpload({ onSuccess }) {
     const seenInvoices = new Set()
 
     for (const row of rows) {
-      const n           = row._rowNum
-      const vendorCode  = getCol(row, 'vendor code')
-      const invoiceNo   = getCol(row, 'invoice')
-      const utr         = getCol(row, 'utr')
-      const dateStr     = getCol(row, 'payment date')
-      const modeRaw     = getCol(row, 'payment mode').toUpperCase()
-      const paymentMode = VALID_MODES.includes(modeRaw) ? modeRaw : 'NEFT'
-      const paymentDate = parseDate(dateStr)
+      const n               = row._rowNum
+      const vendorCode      = getCol(row, 'vendor code')
+      const invoiceNo       = getCol(row, 'invoice')
+      const utr             = getCol(row, 'utr')
+      const dateStr         = getCol(row, 'payment date')
+      const approvalDateStr = getCol(row, 'approval date')
+      const modeRaw         = getCol(row, 'payment mode').toUpperCase()
+      const paymentMode     = VALID_MODES.includes(modeRaw) ? modeRaw : 'NEFT'
+      const paymentDate     = parseDate(dateStr)
+      const approvalDate    = parseDate(approvalDateStr)
 
       const errs = []
 
-      if (!vendorCode) errs.push({ row: n, field: 'Vendor Code',   message: 'Vendor Code is required' })
-      if (!invoiceNo)  errs.push({ row: n, field: 'Invoice No',    message: 'Invoice No is required' })
-      if (!utr)        errs.push({ row: n, field: 'UTR',           message: 'UTR is required' })
-      if (!dateStr)    errs.push({ row: n, field: 'Payment Date',  message: 'Payment Date is required' })
-      else if (!paymentDate) errs.push({ row: n, field: 'Payment Date', message: `"${dateStr}" is not a valid date — use DD/MM/YYYY` })
+      if (!vendorCode)      errs.push({ row: n, field: 'Vendor Code',            message: 'Vendor Code is required' })
+      if (!invoiceNo)       errs.push({ row: n, field: 'Invoice No',             message: 'Invoice No is required' })
+      if (!utr)             errs.push({ row: n, field: 'UTR',                    message: 'UTR is required' })
+      if (!dateStr)         errs.push({ row: n, field: 'Payment Date',           message: 'Payment Date is required' })
+      else if (!paymentDate)  errs.push({ row: n, field: 'Payment Date',         message: `"${dateStr}" is not a valid date — use DD/MM/YYYY` })
+      if (!approvalDateStr) errs.push({ row: n, field: 'Payment Approval Date',  message: 'Payment Approval Date is required' })
+      else if (!approvalDate) errs.push({ row: n, field: 'Payment Approval Date', message: `"${approvalDateStr}" is not a valid date — use DD/MM/YYYY` })
 
       // Duplicate UTR within this batch
       if (utr && seenUTRs.has(utr))
@@ -186,7 +205,7 @@ export function BulkPaymentUpload({ onSuccess }) {
       if (errs.length > 0) {
         rowErrors.push(...errs)
       } else {
-        validRows.push({ vendorCode, vendorName: vendor.name, invoiceNo, utr, paymentDate, paymentMode, vendor, bill, amountPaid: bill.amount })
+        validRows.push({ vendorCode, vendorName: vendor.name, invoiceNo, utr, paymentDate, approvalDate, paymentMode, vendor, bill, amountPaid: bill.amount })
       }
     }
 
@@ -216,6 +235,7 @@ export function BulkPaymentUpload({ onSuccess }) {
             utr_or_cheque_number: row.utr,
             amount_paid:          row.amountPaid,
             paid_at:              row.paymentDate,
+            payment_approved_at:  row.approvalDate,
             paid_by:              paidBy,
           })
           .select('id')
@@ -241,6 +261,7 @@ export function BulkPaymentUpload({ onSuccess }) {
           utr:                   row.utr,
           payment_mode:          row.paymentMode,
           paid_at:               row.paymentDate,
+          payment_approved_at:   row.approvalDate,
           paid_by:               paidBy,
           billing_period_start:  row.bill.billing_period_start,
           billing_period_end:    row.bill.billing_period_end,
@@ -323,10 +344,11 @@ export function BulkPaymentUpload({ onSuccess }) {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Step 1 — Download the template</div>
                   <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 12, lineHeight: 1.6 }}>
-                    Fill in: <strong>Vendor Code</strong>, Vendor Name, <strong>Invoice No</strong>, <strong>UTR</strong>, <strong>Payment Date</strong> (DD/MM/YYYY), Payment Mode (NEFT/RTGS/UPI/CHEQUE)
+                    Template downloads with all active vendors pre-filled. Fill in: <strong>Invoice No</strong>, <strong>UTR</strong>, <strong>Payment Date</strong>, <strong>Payment Approval Date</strong> (DD/MM/YYYY), Payment Mode.
                   </div>
-                  <button onClick={downloadTemplate} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border2)', color: 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                    <Icon name="download" size={13} color="currentColor" /> Download Template
+                  <button onClick={downloadTemplate} disabled={tplLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border2)', color: tplLoading ? 'var(--text3)' : 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: tplLoading ? 'default' : 'pointer', opacity: tplLoading ? 0.6 : 1 }}>
+                    <Icon name="download" size={13} color="currentColor" />
+                    {tplLoading ? 'Loading vendors…' : 'Download Template'}
                   </button>
                 </div>
               </div>
@@ -408,7 +430,7 @@ export function BulkPaymentUpload({ onSuccess }) {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                      {['Vendor', 'Invoice No', 'Amount', 'UTR', 'Mode', 'Payment Date'].map(h => <th key={h} style={TH}>{h}</th>)}
+                      {['Vendor', 'Invoice No', 'Amount', 'UTR', 'Mode', 'Payment Date', 'Approval Date'].map(h => <th key={h} style={TH}>{h}</th>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -420,6 +442,7 @@ export function BulkPaymentUpload({ onSuccess }) {
                         <td style={{ padding: '10px 14px' }}><span className="mono" style={{ fontSize: 12, color: 'var(--text2)' }}>{r.utr}</span></td>
                         <td style={{ padding: '10px 14px' }}><span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 99, padding: '3px 9px' }}>{r.paymentMode}</span></td>
                         <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text3)' }}>{fmtDate(r.paymentDate)}</td>
+                        <td style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text3)' }}>{fmtDate(r.approvalDate)}</td>
                       </tr>
                     ))}
                   </tbody>
