@@ -74,27 +74,28 @@ export function BulkPaymentUpload({ onSuccess }) {
   const [tplLoading, setTplLoading] = useState(false)
   const fileRef = useRef()
 
-  // ── Download template — one row per PENDING_PAYMENT bill ────────────────
+  // ── Download template — all vendors, one row per unique vendor code ──────
   async function downloadTemplate() {
     setTplLoading(true)
-    const { data: bills } = await supabase
-      .from('bills')
-      .select('invoice_number, vendors(vendor_code, name)')
-      .eq('status', 'PENDING_PAYMENT')
-      .order('created_at', { ascending: true })
+    const { data: vendors } = await supabase
+      .from('vendors')
+      .select('vendor_code, name')
+      .eq('status', 'ACTIVE')
+      .not('vendor_code', 'is', null)
+      .order('name', { ascending: true })
     setTplLoading(false)
 
-    // One row per vendor code — deduplicate, keeping earliest pending invoice
+    // Deduplicate by vendor_code — Blue Dart / Prozo / Delhivery have multiple
+    // DB entries for different services but share one vendor code; keep first hit
     const seen = new Map()
-    for (const b of (bills || [])) {
-      if (!b.vendors?.vendor_code) continue
-      if (!seen.has(b.vendors.vendor_code)) seen.set(b.vendors.vendor_code, b)
+    for (const v of (vendors || [])) {
+      if (v.vendor_code && !seen.has(v.vendor_code)) seen.set(v.vendor_code, v)
     }
-    const rows = [...seen.values()]
-      .map(b => `${b.vendors.vendor_code},"${b.vendors.name}","${b.invoice_number}",,,,`)
 
-    // Fallback if no pending bills
-    if (rows.length === 0) rows.push('MRG-001,ABC Supplies Pvt Ltd,INV-2024-089,,,,')
+    const rows = [...seen.values()]
+      .map(v => `${v.vendor_code},"${v.name}",,,,, `)
+
+    if (rows.length === 0) rows.push('MRG-001,ABC Supplies Pvt Ltd,,,,, ')
 
     const csv  = [TEMPLATE_HEADERS, ...rows].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -350,7 +351,7 @@ export function BulkPaymentUpload({ onSuccess }) {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Step 1 — Download the template</div>
                   <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 12, lineHeight: 1.6 }}>
-                    Template downloads with one row per <strong>pending invoice</strong> — vendor, name and invoice pre-filled. Just add <strong>UTR</strong>, <strong>Payment Date</strong>, <strong>Approval Date</strong> (DD/MM/YYYY) and Payment Mode.
+                    Template downloads with all vendors (one row per vendor). Fill in <strong>Invoice No</strong>, <strong>UTR</strong>, <strong>Payment Date</strong>, <strong>Approval Date</strong> (DD/MM/YYYY) and Payment Mode for the vendors you are paying.
                   </div>
                   <button onClick={downloadTemplate} disabled={tplLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border2)', color: tplLoading ? 'var(--text3)' : 'var(--text2)', fontSize: 12, fontWeight: 600, cursor: tplLoading ? 'default' : 'pointer', opacity: tplLoading ? 0.6 : 1 }}>
                     <Icon name="download" size={13} color="currentColor" />
