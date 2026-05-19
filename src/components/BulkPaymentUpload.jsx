@@ -80,7 +80,7 @@ export function BulkPaymentUpload({ onSuccess }) {
     const { data: vendors } = await supabase
       .from('vendors')
       .select('vendor_code, name')
-      .eq('status', 'ACTIVE')
+      .neq('status', 'INACTIVE')
       .not('vendor_code', 'is', null)
       .order('name', { ascending: true })
     setTplLoading(false)
