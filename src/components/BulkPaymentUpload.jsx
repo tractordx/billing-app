@@ -81,19 +81,20 @@ export function BulkPaymentUpload({ onSuccess }) {
       .from('vendors')
       .select('vendor_code, name')
       .neq('status', 'INACTIVE')
-      .not('vendor_code', 'is', null)
       .order('name', { ascending: true })
     setTplLoading(false)
 
-    // Deduplicate by vendor_code — Blue Dart / Prozo / Delhivery have multiple
-    // DB entries for different services but share one vendor code; keep first hit
+    // Deduplicate: vendors with a code → key by vendor_code (handles Prozo ×4,
+    // Blue Dart ×2 etc). Vendors without a code → key by name (handles Delhivery
+    // which has two entries both with no code).
     const seen = new Map()
     for (const v of (vendors || [])) {
-      if (v.vendor_code && !seen.has(v.vendor_code)) seen.set(v.vendor_code, v)
+      const key = v.vendor_code ? `code:${v.vendor_code}` : `name:${v.name}`
+      if (!seen.has(key)) seen.set(key, v)
     }
 
     const rows = [...seen.values()]
-      .map(v => `${v.vendor_code},"${v.name}",,,,, `)
+      .map(v => `${v.vendor_code ?? ''},"${v.name}",,,,, `)
 
     if (rows.length === 0) rows.push('MRG-001,ABC Supplies Pvt Ltd,,,,, ')
 
