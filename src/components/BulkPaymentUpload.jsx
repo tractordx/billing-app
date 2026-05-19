@@ -84,8 +84,13 @@ export function BulkPaymentUpload({ onSuccess }) {
       .order('created_at', { ascending: true })
     setTplLoading(false)
 
-    const rows = (bills || [])
-      .filter(b => b.vendors?.vendor_code)
+    // One row per vendor code — deduplicate, keeping earliest pending invoice
+    const seen = new Map()
+    for (const b of (bills || [])) {
+      if (!b.vendors?.vendor_code) continue
+      if (!seen.has(b.vendors.vendor_code)) seen.set(b.vendors.vendor_code, b)
+    }
+    const rows = [...seen.values()]
       .map(b => `${b.vendors.vendor_code},"${b.vendors.name}","${b.invoice_number}",,,,`)
 
     // Fallback if no pending bills
