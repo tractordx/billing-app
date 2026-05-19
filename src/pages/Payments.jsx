@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { fmt, fmtDate } from '../lib/utils'
 import { Icon } from '../components/Icon'
+import { BulkPaymentUpload } from '../components/BulkPaymentUpload'
 
 const MODE_CFG = {
   NEFT:   { bg: 'var(--lime-dim)',    color: 'var(--lime)',   border: 'rgba(163,230,53,0.25)' },
@@ -18,17 +19,17 @@ export function Payments() {
   const [search, setSearch] = useState('')
   const [modeFilter, setModeFilter] = useState('ALL')
 
-  useEffect(() => {
-    async function load() {
-      const { data } = await supabase
-        .from('payments')
-        .select('id,payment_mode,utr_or_cheque_number,amount_paid,paid_at,paid_by,receipt_url,receipt_filename,created_at,vendors(name),bills(invoice_number)')
-        .order('paid_at', { ascending: false })
-      setPayments(data || [])
-      setLoading(false)
-    }
-    load()
+  const load = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('payments')
+      .select('id,payment_mode,utr_or_cheque_number,amount_paid,paid_at,paid_by,receipt_url,receipt_filename,created_at,vendors(name),bills(invoice_number)')
+      .order('paid_at', { ascending: false })
+    setPayments(data || [])
+    setLoading(false)
   }, [])
+
+  useEffect(() => { load() }, [load])
 
   const totalPaid = payments.reduce((s, p) => s + Number(p.amount_paid), 0)
   const filtered = payments.filter(p => {
@@ -39,12 +40,15 @@ export function Payments() {
 
   return (
     <div style={{ padding: '32px 36px', width: '100%' }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text)' }}>Payments</h1>
-        <div style={{ color: 'var(--text3)', fontSize: 13, marginTop: 4 }}>
-          {payments.length} transactions ·{' '}
-          <span style={{ color: 'var(--green)', fontWeight: 600 }}>{fmt(totalPaid)} total</span>
+      <div style={{ marginBottom: 28, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text)' }}>Payments</h1>
+          <div style={{ color: 'var(--text3)', fontSize: 13, marginTop: 4 }}>
+            {payments.length} transactions ·{' '}
+            <span style={{ color: 'var(--green)', fontWeight: 600 }}>{fmt(totalPaid)} total</span>
+          </div>
         </div>
+        <BulkPaymentUpload onSuccess={load} />
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 18, alignItems: 'center', flexWrap: 'wrap' }}>
