@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase'
 import { fmt, fmtDate, fmtDateDDMMYY, daysAgo, daysUntil } from '../lib/utils'
 import { StatusBadge } from '../components/StatusBadge'
 import { Icon } from '../components/Icon'
+import { ApproveRejectActions } from '../components/ApproveRejectActions'
+import { canActOnBill } from '../lib/approval'
+import { useAuth } from '../contexts/AuthContext'
 
 const TABS = [
   { key: 'ALL',              label: 'All' },
@@ -44,6 +47,7 @@ function generateCSV(bills) {
 
 export function Bills() {
   const navigate=useNavigate()
+  const { role } = useAuth()
   const [searchParams,setSearchParams]=useSearchParams()
   const [bills,setBills]=useState([])
   const [loading,setLoading]=useState(true)
@@ -168,10 +172,21 @@ export function Bills() {
                     )}
                   </td>
                   <td style={{padding:'10px 12px'}}><StatusBadge status={b.status} /></td>
-                  <td style={{padding:'10px 12px'}}>
-                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                      <button onClick={e=>{e.stopPropagation();navigate(`/bills/${b.id}`)}} className="btn-ghost" style={{padding:'5px 12px',fontSize:12}}>Open &rarr;</button>
-                      <button className="btn-ghost" style={{color:'var(--primary)',fontWeight:700,padding:'5px 12px',fontSize:12}} onClick={e=>{e.stopPropagation();openCN(b)}}>+ CR Note</button>
+                  <td style={{padding:'10px 12px'}} onClick={e => { if (canActOnBill({ role, status: b.status })) e.stopPropagation() }}>
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+                      {canActOnBill({ role, status: b.status }) ? (
+                        <ApproveRejectActions
+                          bill={b}
+                          size="sm"
+                          stopRowClick
+                          onDone={(patch) => setBills(prev => prev.map(x => x.id === b.id ? { ...x, ...patch } : x))}
+                        />
+                      ) : (
+                        <>
+                          <button onClick={e=>{e.stopPropagation();navigate(`/bills/${b.id}`)}} className="btn-ghost" style={{padding:'5px 12px',fontSize:12}}>Open &rarr;</button>
+                          <button className="btn-ghost" style={{color:'var(--primary)',fontWeight:700,padding:'5px 12px',fontSize:12}} onClick={e=>{e.stopPropagation();openCN(b)}}>+ CR Note</button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

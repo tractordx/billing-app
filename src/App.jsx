@@ -12,6 +12,7 @@ import { Contracts } from './pages/Contracts'
 import { Payments } from './pages/Payments'
 import { Login } from './pages/Login'
 import { Users } from './pages/Users'
+import { Approvals } from './pages/Approvals'
 
 function ProtectedRoute({ children }) {
   const { session, loading, profile } = useAuth()
@@ -59,6 +60,7 @@ function AnimatedRoutes() {
         <Route path="/"             element={<Dashboard />} />
         <Route path="/bills"        element={<Bills />} />
         <Route path="/bills/:id"    element={<BillDetail />} />
+        <Route path="/approvals"    element={<Approvals />} />
         <Route path="/vendors"      element={<Vendors />} />
         <Route path="/vendors/:id"  element={<VendorDetail />} />
         <Route path="/vendors/:id/ledger" element={<VendorLedger />} />

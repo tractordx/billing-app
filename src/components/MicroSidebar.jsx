@@ -2,13 +2,35 @@ import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { Icon } from './Icon'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 
 const SIDEBAR_KEY = 'miraggio-sidebar'
 const COLLAPSED_W = 64
 const EXPANDED_W  = 232
 
 export function MicroSidebar() {
-  const { isAdmin, profile, role, signOut } = useAuth()
+  const { isAdmin, profile, role, signOut, canApproveL1, canApproveL2 } = useAuth()
+  const canApprove = canApproveL1 || canApproveL2
+
+  // Badge count for pending approvals tab
+  const [pendingCount, setPendingCount] = useState(0)
+  useEffect(() => {
+    if (!canApprove) return
+    let cancelled = false
+    async function fetchPending() {
+      const statuses =
+        role === 'l1' ? ['PENDING_L1'] :
+        role === 'l2' ? ['PENDING_L2'] :
+        ['PENDING_L1', 'PENDING_L2']
+      const { count } = await supabase
+        .from('bills').select('id', { count: 'exact', head: true })
+        .in('status', statuses)
+      if (!cancelled) setPendingCount(count || 0)
+    }
+    fetchPending()
+    const t = setInterval(fetchPending, 30000) // refresh every 30s
+    return () => { cancelled = true; clearInterval(t) }
+  }, [canApprove, role])
 
   // Collapsed by default; toggled by clicking the MIRAGGIO SmS brand
   const [collapsed, setCollapsed] = useState(() => {
@@ -24,6 +46,7 @@ export function MicroSidebar() {
   const NAV = [
     { to: '/',           icon: 'dashboard', label: 'Dashboard'  },
     { to: '/bills',      icon: 'bills',     label: 'Bills'      },
+    ...(canApprove ? [{ to: '/approvals', icon: 'check', label: 'Approvals', badge: pendingCount }] : []),
     { to: '/vendors',    icon: 'vendors',   label: 'Vendors'    },
     { to: '/contracts',  icon: 'contracts', label: 'Contracts'  },
     { to: '/payments',   icon: 'payments',  label: 'Payments'   },
@@ -93,13 +116,13 @@ export function MicroSidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, paddingTop: 10, paddingBottom: 10, overflowY: 'auto', overflowX: 'hidden' }}>
-        {NAV.map(({ to, icon, label }) => (
+        {NAV.map(({ to, icon, label, badge }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
             style={{ display: 'block', textDecoration: 'none' }}
-            title={collapsed ? label : ''}
+            title={collapsed ? (badge ? `${label} (${badge})` : label) : ''}
           >
             {({ isActive }) => (
               <div
@@ -110,7 +133,8 @@ export function MicroSidebar() {
                   margin: '2px 6px',
                   borderLeft: '3px solid transparent',
                   whiteSpace: 'nowrap',
-                } : { whiteSpace: 'nowrap' }}
+                  position: 'relative',
+                } : { whiteSpace: 'nowrap', position: 'relative' }}
               >
                 <Icon
                   name={icon}
@@ -118,6 +142,23 @@ export function MicroSidebar() {
                   color={isActive ? 'var(--primary)' : 'var(--text3)'}
                 />
                 {!collapsed && label}
+                {badge > 0 && (
+                  collapsed ? (
+                    <span style={{
+                      position: 'absolute', top: 2, right: 8,
+                      background: 'var(--red, #ef4444)', color: '#fff',
+                      fontSize: 9, fontWeight: 700, padding: '1px 5px',
+                      borderRadius: 8, lineHeight: 1.4, minWidth: 14, textAlign: 'center',
+                    }}>{badge > 99 ? '99+' : badge}</span>
+                  ) : (
+                    <span style={{
+                      marginLeft: 'auto',
+                      background: isActive ? 'var(--primary)' : 'var(--red, #ef4444)',
+                      color: '#fff', fontSize: 10, fontWeight: 700,
+                      padding: '2px 7px', borderRadius: 10, lineHeight: 1.3,
+                    }}>{badge > 99 ? '99+' : badge}</span>
+                  )
+                )}
               </div>
             )}
           </NavLink>

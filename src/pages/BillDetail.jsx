@@ -5,6 +5,7 @@ import { fmt, fmtDate } from '../lib/utils'
 import { StatusBadge } from '../components/StatusBadge'
 import { Icon } from '../components/Icon'
 import { useAuth } from '../contexts/AuthContext'
+import { submitApproval, pendingLevelFor } from '../lib/approval'
 
 const TH = { padding: '9px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.03em' }
 
@@ -84,30 +85,36 @@ export function BillDetail() {
   }
 
   async function handleApprove() {
+    const level = pendingLevelFor(bill?.status)
+    if (!level) { setActionError('Bill is not pending approval'); return }
     setActing(true); setActionError('')
+    const res = await submitApproval({ billId: id, level, action: 'APPROVE', profile })
+    setActing(false)
+    if (!res.ok) { setActionError(res.error || 'Approval failed'); return }
+    // Reflect the change locally — webhook has flipped status server-side.
     const now = new Date().toISOString()
     const actor = profile?.name || profile?.email || 'System'
-    let update = {}
-    if (bill.status === 'PENDING_L1') update = { status: 'PENDING_L2', l1_approved_at: now, l1_approved_by: actor }
-    else if (bill.status === 'PENDING_L2') update = { status: 'PENDING_PAYMENT', l2_approved_at: now, l2_approved_by: actor }
-    const { error: err } = await supabase.from('bills').update({ ...update, updated_at: now }).eq('id', id)
-    if (err) setActionError(err.message)
-    else setBill(prev => ({ ...prev, ...update }))
-    setActing(false)
+    const update = level === 'L1'
+      ? { status: 'PENDING_L2', l1_approved_at: now, l1_approved_by: actor }
+      : { status: 'PENDING_PAYMENT', l2_approved_at: now, l2_approved_by: actor }
+    setBill(prev => ({ ...prev, ...update }))
   }
 
   async function handleReject() {
     if (!rejectReason.trim()) return
+    const level = pendingLevelFor(bill?.status)
+    if (!level) { setActionError('Bill is not pending approval'); return }
     setActing(true); setActionError('')
+    const res = await submitApproval({ billId: id, level, action: 'REJECT', profile, reason: rejectReason })
+    setActing(false)
+    if (!res.ok) { setActionError(res.error || 'Rejection failed'); return }
     const now = new Date().toISOString()
     const actor = profile?.name || profile?.email || 'System'
-    let update = {}
-    if (bill.status === 'PENDING_L1') update = { status: 'REJECTED_L1', l1_approved_by: actor, l1_rejection_reason: rejectReason.trim() }
-    else if (bill.status === 'PENDING_L2') update = { status: 'REJECTED_L2', l2_approved_by: actor, l2_rejection_reason: rejectReason.trim() }
-    const { error: err } = await supabase.from('bills').update({ ...update, updated_at: now }).eq('id', id)
-    if (err) { setActionError(err.message); setActing(false); return }
+    const update = level === 'L1'
+      ? { status: 'REJECTED_L1', l1_rejected_by: actor, l1_rejected_at: now, l1_rejection_reason: rejectReason.trim() }
+      : { status: 'REJECTED_L2', l2_rejected_by: actor, l2_rejected_at: now, l2_rejection_reason: rejectReason.trim() }
     setBill(prev => ({ ...prev, ...update }))
-    setShowRejectModal(false); setRejectReason(''); setActing(false)
+    setShowRejectModal(false); setRejectReason('')
   }
 
   if (loading) return <div style={{ padding: 40, color: 'var(--text3)', fontSize: 13 }}>Loading…</div>
