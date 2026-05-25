@@ -37,9 +37,9 @@ function dueDateColor(d) {
   return 'var(--text2)'
 }
 function generateCSV(bills) {
-  const headers=['Vendor','Invoice','Amount','Period','Frequency','Category','Due Date','Status','Created']
-  const rows=bills.map(b=>[b.vendors?.name||'',b.invoice_number||'',fmt(b.amount),fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency),FREQ_LABELS[b.frequency]||b.frequency||'',CAT_LABELS[b.category]||b.category||'',fmtDateDDMMYY(b.due_date),b.status,fmtDate(b.created_at)])
-  const csv=[headers,...rows].map(r=>r.map(v=>`"${v}"`).join(',')).join('\n')
+  const headers=['Vendor','Invoice','Amount (INR)','Period','Frequency','Category','Due Date','Status','Created']
+  const rows=bills.map(b=>[b.vendors?.name||'',b.invoice_number||'',b.amount??'',fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency),FREQ_LABELS[b.frequency]||b.frequency||'',CAT_LABELS[b.category]||b.category||'',fmtDateDDMMYY(b.due_date),b.status,fmtDate(b.created_at)])
+  const csv=[headers,...rows].map((r,i)=>r.map((v,j)=>i>0&&j===2?v:`"${v}"`).join(',')).join('\n')
   const blob=new Blob([csv],{type:'text/csv'})
   const url=URL.createObjectURL(blob)
   const a=document.createElement('a');a.href=url;a.download=`bills-${new Date().toISOString().split('T')[0]}.csv`;a.click();URL.revokeObjectURL(url)
