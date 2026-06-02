@@ -22,12 +22,15 @@ const TH = { padding:'11px 16px', textAlign:'left', fontSize:11, fontWeight:600,
 const LBL = { display:'block', fontSize:12, fontWeight:600, color:'var(--text3)', marginBottom:6 }
 const EMPTY_CN = { amount:'', reason:'', date:new Date().toISOString().slice(0,10), cn_number:'' }
 
-function fmtBillingPeriod(start, end, frequency) {
-  if (!start) return ''
-  if (frequency === 'QUARTERLY') { const m=new Date(start).getMonth(),y=new Date(start).getFullYear(); return `Q${Math.floor(m/3)+1} ${y}` }
-  if (frequency === 'ANNUAL') return new Date(start).getFullYear().toString()
-  return new Date(start).toLocaleDateString('en-IN',{month:'short',year:'numeric'})
+function fmtBillingPeriod(start, end, frequency, fallback) {
+  const base = start || fallback
+  if (!base) return ''
+  if (frequency === 'QUARTERLY') { const m=new Date(base).getMonth(),y=new Date(base).getFullYear(); return `Q${Math.floor(m/3)+1} ${y}` }
+  if (frequency === 'ANNUAL') return new Date(base).getFullYear().toString()
+  return new Date(base).toLocaleDateString('en-IN',{month:'short',year:'numeric'})
 }
+// Bill category falls back to the vendor's category when the bill itself has none.
+function billCategory(b) { return b.category || b.vendors?.category || '' }
 function dueDateColor(d) {
   if (!d) return 'var(--text3)'
   const days=daysUntil(d)
@@ -38,7 +41,7 @@ function dueDateColor(d) {
 }
 function generateCSV(bills) {
   const headers=['Vendor','Invoice','Amount (INR)','Period','Frequency','Category','Due Date','Status','Created']
-  const rows=bills.map(b=>[b.vendors?.name||'',b.invoice_number||'',b.amount??'',fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency),FREQ_LABELS[b.frequency]||b.frequency||'',CAT_LABELS[b.category]||b.category||'',fmtDateDDMMYY(b.due_date),b.status,fmtDate(b.created_at)])
+  const rows=bills.map(b=>[b.vendors?.name||'',b.invoice_number||'',b.amount??'',fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency,b.created_at),FREQ_LABELS[b.frequency]||b.frequency||'',CAT_LABELS[billCategory(b)]||billCategory(b),fmtDateDDMMYY(b.due_date),b.status,fmtDate(b.created_at)])
   const csv=[headers,...rows].map((r,i)=>r.map((v,j)=>i>0&&j===2?v:`"${v}"`).join(',')).join('\n')
   const blob=new Blob([csv],{type:'text/csv'})
   const url=URL.createObjectURL(blob)
@@ -63,7 +66,7 @@ export function Bills() {
   useEffect(()=>{
     async function load(){
       setLoading(true)
-      const {data}=await supabase.from('bills').select('id,invoice_number,amount,status,billing_period_start,billing_period_end,due_date,paid_at,frequency,category,anomaly_flags,created_at,vendor_id,order_type,vendors(name)').order('created_at',{ascending:false})
+      const {data}=await supabase.from('bills').select('id,invoice_number,amount,status,billing_period_start,billing_period_end,due_date,paid_at,frequency,category,anomaly_flags,bill_pdf_url,created_at,vendor_id,order_type,vendors(name,category)').order('created_at',{ascending:false})
       setBills(data||[]);setLoading(false)
     }
     load()
@@ -149,9 +152,9 @@ export function Bills() {
                   </td>
                   <td style={{padding:'10px 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" style={{fontSize:12,color:'var(--text2)'}}>{b.invoice_number||''}</span></td>
                   <td style={{padding:'10px 12px'}}><span className="mono" style={{fontWeight:600,fontSize:13,color:'var(--text)'}}>{fmt(b.amount)}</span></td>
-                  <td style={{padding:'10px 12px',fontSize:12,color:'var(--text3)'}}>{fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency)}</td>
+                  <td style={{padding:'10px 12px',fontSize:12,color:'var(--text3)'}}>{fmtBillingPeriod(b.billing_period_start,b.billing_period_end,b.frequency,b.created_at)}</td>
                   <td style={{padding:'10px 12px'}}>{(FREQ_LABELS[b.frequency]||b.frequency)&&<span style={{fontSize:11,background:'var(--surface3)',color:'var(--text2)',borderRadius:6,padding:'3px 8px',border:'1px solid var(--border2)'}}>{FREQ_LABELS[b.frequency]||b.frequency}</span>}</td>
-                  <td style={{padding:'10px 12px'}}>{(CAT_LABELS[b.category]||b.category)&&<span style={{fontSize:11,background:'var(--primary-light)',color:'var(--primary)',borderRadius:6,padding:'3px 8px',fontWeight:600}}>{CAT_LABELS[b.category]||b.category}</span>}</td>
+                  <td style={{padding:'10px 12px'}}>{billCategory(b)&&<span style={{fontSize:11,background:'var(--primary-light)',color:'var(--primary)',borderRadius:6,padding:'3px 8px',fontWeight:600}}>{CAT_LABELS[billCategory(b)]||billCategory(b)}</span>}</td>
                   {/* Due date + paid date */}
                   <td style={{padding:'10px 12px'}}>
                     {b.due_date
@@ -174,6 +177,24 @@ export function Bills() {
                   <td style={{padding:'10px 12px'}}><StatusBadge status={b.status} /></td>
                   <td style={{padding:'10px 12px'}} onClick={e => { if (canActOnBill({ role, status: b.status })) e.stopPropagation() }}>
                     <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+                      {/* PDF icon — always shown, clickable only if URL exists */}
+                      {b.bill_pdf_url ? (
+                        <a
+                          href={b.bill_pdf_url} target="_blank" rel="noreferrer"
+                          onClick={e=>e.stopPropagation()}
+                          title="View Invoice PDF"
+                          style={{display:'flex',alignItems:'center',gap:4,padding:'5px 10px',borderRadius:'var(--radius)',border:'1px solid rgba(59,130,246,0.35)',background:'rgba(59,130,246,0.08)',color:'var(--primary)',fontWeight:700,fontSize:11,textDecoration:'none'}}
+                        >
+                          <Icon name="bills" size={11} color="var(--primary)" /> PDF
+                        </a>
+                      ) : (
+                        <span
+                          title="No PDF available"
+                          style={{display:'flex',alignItems:'center',gap:4,padding:'5px 10px',borderRadius:'var(--radius)',border:'1px solid var(--border)',background:'var(--surface2)',color:'var(--text3)',fontSize:11,opacity:0.5}}
+                        >
+                          <Icon name="bills" size={11} color="var(--text3)" /> PDF
+                        </span>
+                      )}
                       {canActOnBill({ role, status: b.status }) ? (
                         <ApproveRejectActions
                           bill={b}
@@ -232,5 +253,3 @@ export function Bills() {
     </div>
   )
 }
-
-
