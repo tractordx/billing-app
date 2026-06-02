@@ -42,6 +42,8 @@ export function BillDetail() {
   const [actionError, setActionError] = useState('')
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
+  const [stampedFile, setStampedFile] = useState(null)
+  const [stampedUploading, setStampedUploading] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -88,16 +90,44 @@ export function BillDetail() {
     const level = pendingLevelFor(bill?.status)
     if (!level) { setActionError('Bill is not pending approval'); return }
     setActing(true); setActionError('')
+
+    // Optional: upload a stamped invoice PDF alongside the approval.
+    let stampedPatch = null
+    if (stampedFile) {
+      setStampedUploading(true)
+      const ext = stampedFile.name.split('.').pop()
+      const path = `stamped/${id}_${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('receipts').upload(path, stampedFile, { contentType: stampedFile.type, upsert: true })
+      setStampedUploading(false)
+      if (upErr) { setActing(false); setActionError(`Stamped invoice upload failed: ${upErr.message}`); return }
+      const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(path)
+      stampedPatch = {
+        stamped_invoice_url: urlData.publicUrl,
+        stamped_invoice_filename: stampedFile.name,
+        stamped_invoice_uploaded_by: profile?.name || profile?.email || 'Dashboard User',
+        stamped_invoice_uploaded_at: new Date().toISOString(),
+      }
+    }
+
     const res = await submitApproval({ billId: id, level, action: 'APPROVE', profile })
+    if (!res.ok) { setActing(false); setActionError(res.error || 'Approval failed'); return }
+
+    // Persist the stamped invoice after submitApproval (which patches name fields
+    // ~1.2s after the webhook) so our values are not overwritten.
+    if (stampedPatch) {
+      const { error: stErr } = await supabase.from('bills').update(stampedPatch).eq('id', id)
+      if (stErr) { setActionError(`Approved, but stamped invoice link failed to save: ${stErr.message}`) }
+    }
+
     setActing(false)
-    if (!res.ok) { setActionError(res.error || 'Approval failed'); return }
     // Reflect the change locally — webhook has flipped status server-side.
     const now = new Date().toISOString()
     const actor = profile?.name || profile?.email || 'System'
     const update = level === 'L1'
       ? { status: 'PENDING_L2', l1_approved_at: now, l1_approved_by: actor }
       : { status: 'PENDING_PAYMENT', l2_approved_at: now, l2_approved_by: actor }
-    setBill(prev => ({ ...prev, ...update }))
+    setBill(prev => ({ ...prev, ...update, ...(stampedPatch || {}) }))
+    setStampedFile(null)
   }
 
   async function handleReject() {
@@ -193,7 +223,51 @@ export function BillDetail() {
             <h1 style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text)' }}>{bill.invoice_number || 'Untitled Bill'}</h1>
             <div style={{ color: 'var(--text3)', fontSize: 13, marginTop: 4 }}>{v?.name} · {fmtDate(bill.created_at)}</div>
           </div>
-          <StatusBadge status={bill.status} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {bill.bill_pdf_url ? (
+              <a
+                href={bill.bill_pdf_url}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
+                  borderRadius: 'var(--radius)', border: '1px solid rgba(59,130,246,0.4)',
+                  background: 'rgba(59,130,246,0.08)', color: 'var(--primary)',
+                  fontWeight: 700, fontSize: 12, textDecoration: 'none', whiteSpace: 'nowrap',
+                }}
+              >
+                <Icon name="bills" size={13} color="var(--primary)" /> View Invoice PDF
+              </a>
+            ) : (
+              <span
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
+                  borderRadius: 'var(--radius)', border: '1px solid var(--border2)',
+                  background: 'var(--surface2)', color: 'var(--text3)',
+                  fontWeight: 600, fontSize: 12, whiteSpace: 'nowrap', opacity: 0.6,
+                }}
+              >
+                <Icon name="bills" size={13} color="var(--text3)" /> No PDF
+              </span>
+            )}
+            {bill.stamped_invoice_url && (
+              <a
+                href={bill.stamped_invoice_url}
+                target="_blank"
+                rel="noreferrer"
+                title={bill.stamped_invoice_filename || 'Stamped invoice'}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
+                  borderRadius: 'var(--radius)', border: '1px solid rgba(34,197,94,0.4)',
+                  background: 'var(--green-light)', color: 'var(--green)',
+                  fontWeight: 700, fontSize: 12, textDecoration: 'none', whiteSpace: 'nowrap',
+                }}
+              >
+                <Icon name="bills" size={13} color="var(--green)" /> Stamped Invoice
+              </a>
+            )}
+            <StatusBadge status={bill.status} />
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20 }}>
@@ -420,6 +494,39 @@ export function BillDetail() {
                       </button>
                     )}
                   </div>
+
+                  {/* Optional stamped invoice — uploaded together with the approval */}
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 600, marginBottom: 8 }}>
+                      Stamped Invoice <span style={{ opacity: 0.6, fontWeight: 400 }}>(PDF, optional)</span>
+                    </div>
+                    <label style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      border: `1px dashed ${stampedFile ? 'var(--primary)' : 'var(--border2)'}`,
+                      borderRadius: 'var(--radius)', padding: '10px 14px', cursor: 'pointer',
+                      background: stampedFile ? 'var(--orange-dim, rgba(29,78,216,0.08))' : 'var(--surface2)',
+                      transition: 'all 0.2s',
+                    }}>
+                      <Icon name="bills" size={14} color={stampedFile ? 'var(--primary)' : 'var(--text3)'} />
+                      <span style={{ fontSize: 13, color: stampedFile ? 'var(--primary)' : 'var(--text3)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {stampedFile ? stampedFile.name : 'Attach stamped invoice…'}
+                      </span>
+                      {stampedFile && (
+                        <button type="button" onClick={e => { e.preventDefault(); setStampedFile(null) }} style={{ background: 'none', border: 'none', color: 'var(--red)', padding: 0, lineHeight: 1, cursor: 'pointer' }}>
+                          <Icon name="x" size={14} color="var(--red)" />
+                        </button>
+                      )}
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" style={{ display: 'none' }} onChange={e => setStampedFile(e.target.files[0] || null)} />
+                    </label>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6 }}>
+                      {stampedUploading ? 'Uploading…' : 'Optional. Attaches when you click Approve and is shared with finance.'}
+                    </div>
+                    {bill.stamped_invoice_url && (
+                      <a href={bill.stamped_invoice_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 8, fontSize: 12, color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
+                        <Icon name="external" size={12} color="var(--primary)" /> View current stamped invoice
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -507,4 +614,3 @@ export function BillDetail() {
     </>
   )
 }
-

@@ -23,7 +23,7 @@ export function Payments() {
     setLoading(true)
     const { data } = await supabase
       .from('payments')
-      .select('id,payment_mode,utr_or_cheque_number,amount_paid,paid_at,paid_by,receipt_url,receipt_filename,created_at,vendors(name),bills(invoice_number)')
+      .select('id,payment_mode,utr_or_cheque_number,amount_paid,paid_at,paid_by,receipt_url,receipt_filename,created_at,vendors(name),bills(invoice_number,stamped_invoice_url,stamped_invoice_filename)')
       .order('paid_at', { ascending: false })
     setPayments(data || [])
     setLoading(false)
@@ -79,7 +79,7 @@ export function Payments() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-                {['Vendor', 'Invoice', 'Amount', 'Mode', 'UTR / Cheque', 'Paid By', 'Date', 'Receipt'].map(h => (
+                {['Vendor', 'Invoice', 'Amount', 'Mode', 'UTR / Cheque', 'Paid By', 'Date', 'Receipt', 'Stamped Invoice'].map(h => (
                   <th key={h} style={TH}>{h}</th>
                 ))}
               </tr>
@@ -105,11 +105,18 @@ export function Payments() {
                         </a>
                       ) : <span style={{ color: 'var(--text3)', fontSize: 13 }}>—</span>}
                     </td>
+                    <td style={{ padding: '13px 16px' }}>
+                      {p.bills?.stamped_invoice_url ? (
+                        <a href={p.bills.stamped_invoice_url} target="_blank" rel="noreferrer" title={p.bills.stamped_invoice_filename || 'Stamped invoice'} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--green)', fontWeight: 600, textDecoration: 'none' }}>
+                          <Icon name="external" size={13} color="var(--green)" /> View
+                        </a>
+                      ) : <span style={{ color: 'var(--text3)', fontSize: 13 }}>—</span>}
+                    </td>
                   </tr>
                 )
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No payment records</td></tr>
+                <tr><td colSpan={9} style={{ padding: 52, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No payment records</td></tr>
               )}
             </tbody>
           </table>
@@ -118,4 +125,3 @@ export function Payments() {
     </div>
   )
 }
-
